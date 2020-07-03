@@ -6,6 +6,16 @@ let
         gpgme = (static pkg.gpgme);
         libassuan = (static pkg.libassuan);
         libgpgerror = (static pkg.libgpgerror);
+        libseccomp = (static pkg.libseccomp);
+        glib = (static pkg.glib).overrideAttrs(x: {
+          outputs = [ "bin" "out" "dev" ];
+          mesonFlags = [
+            "-Ddefault_library=static"
+            "-Ddevbindir=${placeholder ''dev''}/bin"
+            "-Dgtk_doc=false"
+            "-Dnls=disabled"
+          ];
+        });
       };
     };
   });
@@ -21,14 +31,15 @@ let
     enableStatic = true;
   });
 
-  self = with pkgs; buildGoPackage rec {
+  self = with pkgs; buildGoModule rec {
     name = "skopeo";
     src = ./..;
-    goPackagePath = "github.com/containers/skopeo";
+    vendorSha256 = null;
     doCheck = false;
     enableParallelBuilding = true;
-    nativeBuildInputs = [ git go-md2man installShellFiles makeWrapper pkg-config ];
-    buildInputs = [ glibc glibc.static gpgme libassuan libgpgerror ];
+    outputs = [ "out" ];
+    nativeBuildInputs = [ bash git go-md2man installShellFiles makeWrapper pkg-config which ];
+    buildInputs = [ glibc glibc.static gpgme libassuan libgpgerror libseccomp ];
     prePatch = ''
       export CFLAGS='-static'
       export LDFLAGS='-s -w -static-libgcc -static'
@@ -36,7 +47,6 @@ let
       export BUILDTAGS='static netgo exclude_graphdriver_btrfs exclude_graphdriver_devicemapper'
     '';
     buildPhase = ''
-      pushd go/src/${goPackagePath}
       patchShebangs .
       make bin/skopeo
     '';
