@@ -128,7 +128,7 @@ docs-in-container:
 		skopeobuildimage make docs $(if $(DEBUG),DEBUG=$(DEBUG)) BUILDTAGS='$(BUILDTAGS)'
 
 clean:
-	rm -f bin docs/*.1
+	rm -rf bin docs/*.1
 
 install: install-binary install-docs install-completions
 	install -d -m 755 ${SIGSTOREDIR}
