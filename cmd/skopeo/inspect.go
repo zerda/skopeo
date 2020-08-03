@@ -5,34 +5,18 @@ import (
 	"fmt"
 	"io"
 	"strings"
-	"time"
 
 	"github.com/containers/image/v5/docker"
 	"github.com/containers/image/v5/image"
 	"github.com/containers/image/v5/manifest"
 	"github.com/containers/image/v5/transports"
 	"github.com/containers/image/v5/types"
-	digest "github.com/opencontainers/go-digest"
+	"github.com/containers/skopeo/cmd/skopeo/inspect"
 	v1 "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
-
-// inspectOutput is the output format of (skopeo inspect), primarily so that we can format it with a simple json.MarshalIndent.
-type inspectOutput struct {
-	Name          string `json:",omitempty"`
-	Tag           string `json:",omitempty"`
-	Digest        digest.Digest
-	RepoTags      []string
-	Created       *time.Time
-	DockerVersion string
-	Labels        map[string]string
-	Architecture  string
-	Os            string
-	Layers        []string
-	Env           []string
-}
 
 type inspectOptions struct {
 	global    *globalOptions
@@ -164,7 +148,7 @@ func (opts *inspectOptions) run(args []string, stdout io.Writer) (retErr error) 
 		return err
 	}
 
-	outputData := inspectOutput{
+	outputData := inspect.Output{
 		Name: "", // Set below if DockerReference() is known
 		Tag:  imgInspect.Tag,
 		// Digest is set below.
