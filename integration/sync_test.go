@@ -117,6 +117,34 @@ func (s *SyncSuite) TestDocker2DirTagged(c *check.C) {
 	c.Assert(out, check.Equals, "")
 }
 
+func (s *SyncSuite) TestDocker2DirTaggedAll(c *check.C) {
+	tmpDir, err := ioutil.TempDir("", "skopeo-sync-test")
+	c.Assert(err, check.IsNil)
+	defer os.RemoveAll(tmpDir)
+
+	// FIXME: It would be nice to use one of the local Docker registries instead of neeeding an Internet connection.
+	image := "busybox:latest"
+	imageRef, err := docker.ParseReference(fmt.Sprintf("//%s", image))
+	c.Assert(err, check.IsNil)
+	imagePath := imageRef.DockerReference().String()
+
+	dir1 := path.Join(tmpDir, "dir1")
+	dir2 := path.Join(tmpDir, "dir2")
+
+	// sync docker => dir
+	assertSkopeoSucceeds(c, "", "sync", "--all", "--scoped", "--src", "docker", "--dest", "dir", image, dir1)
+	_, err = os.Stat(path.Join(dir1, imagePath, "manifest.json"))
+	c.Assert(err, check.IsNil)
+
+	// copy docker => dir
+	assertSkopeoSucceeds(c, "", "copy", "--all", "docker://"+image, "dir:"+dir2)
+	_, err = os.Stat(path.Join(dir2, "manifest.json"))
+	c.Assert(err, check.IsNil)
+
+	out := combinedOutputOfCommand(c, "diff", "-urN", path.Join(dir1, imagePath), dir2)
+	c.Assert(out, check.Equals, "")
+}
+
 func (s *SyncSuite) TestScoped(c *check.C) {
 	// FIXME: It would be nice to use one of the local Docker registries instead of needing an Internet connection.
 	image := "busybox:latest"

@@ -36,6 +36,7 @@ type syncOptions struct {
 	source            string // Source repository name
 	destination       string // Destination registry name
 	scoped            bool   // When true, namespace copied images at destination using the source repository name
+	all               bool   // Copy all of the images if an image in the source is a list
 }
 
 // repoDescriptor contains information of a single repository used as a sync source.
@@ -97,6 +98,7 @@ See skopeo-sync(1) for details.
 	flags.StringVarP(&opts.source, "src", "s", "", "SOURCE transport type")
 	flags.StringVarP(&opts.destination, "dest", "d", "", "DESTINATION transport type")
 	flags.BoolVar(&opts.scoped, "scoped", false, "Images at DESTINATION are prefix using the full source image path as scope")
+	flags.BoolVarP(&opts.all, "all", "a", false, "Copy all images if SOURCE-IMAGE is a list")
 	flags.AddFlagSet(&sharedFlags)
 	flags.AddFlagSet(&srcFlags)
 	flags.AddFlagSet(&destFlags)
@@ -523,6 +525,11 @@ func (opts *syncOptions) run(args []string, stdout io.Writer) error {
 		return errors.New("sync from 'dir' to 'dir' not implemented, consider using rsync instead")
 	}
 
+	imageListSelection := copy.CopySystemImage
+	if opts.all {
+		imageListSelection = copy.CopyAllImages
+	}
+
 	sourceCtx, err := opts.srcImage.newSystemContext()
 	if err != nil {
 		return err
@@ -548,10 +555,11 @@ func (opts *syncOptions) run(args []string, stdout io.Writer) error {
 
 	imagesNumber := 0
 	options := copy.Options{
-		RemoveSignatures: opts.removeSignatures,
-		SignBy:           opts.signByFingerprint,
-		ReportWriter:     os.Stdout,
-		DestinationCtx:   destinationCtx,
+		RemoveSignatures:   opts.removeSignatures,
+		SignBy:             opts.signByFingerprint,
+		ReportWriter:       os.Stdout,
+		DestinationCtx:     destinationCtx,
+		ImageListSelection: imageListSelection,
 	}
 
 	for _, srcRepo := range srcRepoList {
