@@ -18,6 +18,7 @@ import (
 	"github.com/containers/image/v5/docker/reference"
 	"github.com/containers/image/v5/transports"
 	"github.com/containers/image/v5/types"
+	"github.com/opencontainers/go-digest"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -39,9 +40,9 @@ type syncOptions struct {
 
 // repoDescriptor contains information of a single repository used as a sync source.
 type repoDescriptor struct {
-	DirBasePath  string                 // base path when source is 'dir'
-	TaggedImages []types.ImageReference // List of tagged image found for the repository
-	Context      *types.SystemContext   // SystemContext for the sync command
+	DirBasePath string                 // base path when source is 'dir'
+	ImageRefs   []types.ImageReference // List of tagged image found for the repository
+	Context     *types.SystemContext   // SystemContext for the sync command
 }
 
 // tlsVerify is an implementation of the Unmarshaler interface, used to
@@ -53,7 +54,7 @@ type tlsVerifyConfig struct {
 // registrySyncConfig contains information about a single registry, read from
 // the source YAML file
 type registrySyncConfig struct {
-	Images           map[string][]string    // Images map images name to slices with the images' tags
+	Images           map[string][]string    // Images map images name to slices with the images' references (tags, digests)
 	ImagesByTagRegex map[string]string      `yaml:"images-by-tag-regex"` // Images map images name to regular expression with the images' tags
 	Credentials      types.DockerAuthConfig // Username and password used to authenticate with the registry
 	TLSVerify        tlsVerifyConfig        `yaml:"tls-verify"` // TLS verification mode (enabled by default)
@@ -269,7 +270,7 @@ func imagesToCopyFromDir(dirPath string) ([]types.ImageReference, error) {
 // in a registry configuration.
 // It returns a repository descriptors slice with as many elements as the images
 // found and any error encountered. Each element of the slice is a list of
-// tagged image references, to be used as sync source.
+// image references, to be used as sync source.
 func imagesToCopyFromRegistry(registryName string, cfg registrySyncConfig, sourceCtx types.SystemContext) ([]repoDescriptor, error) {
 	serverCtx := &sourceCtx
 	// override ctx with per-registryName options
@@ -280,7 +281,7 @@ func imagesToCopyFromRegistry(registryName string, cfg registrySyncConfig, sourc
 	serverCtx.DockerAuthConfig = &cfg.Credentials
 
 	var repoDescList []repoDescriptor
-	for imageName, tags := range cfg.Images {
+	for imageName, refs := range cfg.Images {
 		repoLogger := logrus.WithFields(logrus.Fields{
 			"repo":     imageName,
 			"registry": registryName,
@@ -295,24 +296,37 @@ func imagesToCopyFromRegistry(registryName string, cfg registrySyncConfig, sourc
 		repoLogger.Info("Processing repo")
 
 		var sourceReferences []types.ImageReference
-		if len(tags) != 0 {
-			for _, tag := range tags {
-				tagLogger := logrus.WithFields(logrus.Fields{"tag": tag})
-				taggedRef, err := reference.WithTag(repoRef, tag)
-				if err != nil {
-					tagLogger.Error("Error parsing tag, skipping")
-					logrus.Error(err)
-					continue
+		if len(refs) != 0 {
+			for _, ref := range refs {
+				tagLogger := logrus.WithFields(logrus.Fields{"ref": ref})
+				var named reference.Named
+				// first try as digest
+				if d, err := digest.Parse(ref); err == nil {
+					named, err = reference.WithDigest(repoRef, d)
+					if err != nil {
+						tagLogger.Error("Error processing ref, skipping")
+						logrus.Error(err)
+						continue
+					}
+				} else {
+					tagLogger.Debugf("Ref was not a digest, trying as a tag: %s", err)
+					named, err = reference.WithTag(repoRef, ref)
+					if err != nil {
+						tagLogger.Error("Error parsing ref, skipping")
+						logrus.Error(err)
+						continue
+					}
 				}
-				imageRef, err := docker.NewReference(taggedRef)
+
+				imageRef, err := docker.NewReference(named)
 				if err != nil {
-					tagLogger.Error("Error processing tag, skipping")
+					tagLogger.Error("Error processing ref, skipping")
 					logrus.Errorf("Error getting image reference: %s", err)
 					continue
 				}
 				sourceReferences = append(sourceReferences, imageRef)
 			}
-		} else { // len(tags) == 0
+		} else { // len(refs) == 0
 			repoLogger.Info("Querying registry for image tags")
 			sourceReferences, err = imagesToCopyFromRepo(serverCtx, repoRef)
 			if err != nil {
@@ -323,12 +337,12 @@ func imagesToCopyFromRegistry(registryName string, cfg registrySyncConfig, sourc
 		}
 
 		if len(sourceReferences) == 0 {
-			repoLogger.Warnf("No tags to sync found")
+			repoLogger.Warnf("No refs to sync found")
 			continue
 		}
 		repoDescList = append(repoDescList, repoDescriptor{
-			TaggedImages: sourceReferences,
-			Context:      serverCtx})
+			ImageRefs: sourceReferences,
+			Context:   serverCtx})
 	}
 
 	for imageName, tagRegex := range cfg.ImagesByTagRegex {
@@ -377,12 +391,12 @@ func imagesToCopyFromRegistry(registryName string, cfg registrySyncConfig, sourc
 		}
 
 		if len(sourceReferences) == 0 {
-			repoLogger.Warnf("No tags to sync found")
+			repoLogger.Warnf("No refs to sync found")
 			continue
 		}
 		repoDescList = append(repoDescList, repoDescriptor{
-			TaggedImages: sourceReferences,
-			Context:      serverCtx})
+			ImageRefs: sourceReferences,
+			Context:   serverCtx})
 	}
 
 	return repoDescList, nil
@@ -415,13 +429,13 @@ func imagesToCopy(source string, transport string, sourceCtx *types.SystemContex
 			if err != nil {
 				return nil, errors.Wrapf(err, "Cannot obtain a valid image reference for transport %q and reference %q", docker.Transport.Name(), named.String())
 			}
-			desc.TaggedImages = []types.ImageReference{srcRef}
+			desc.ImageRefs = []types.ImageReference{srcRef}
 		} else {
-			desc.TaggedImages, err = imagesToCopyFromRepo(sourceCtx, named)
+			desc.ImageRefs, err = imagesToCopyFromRepo(sourceCtx, named)
 			if err != nil {
 				return descriptors, err
 			}
-			if len(desc.TaggedImages) == 0 {
+			if len(desc.ImageRefs) == 0 {
 				return descriptors, errors.Errorf("No images to sync found in %q", source)
 			}
 		}
@@ -437,11 +451,11 @@ func imagesToCopy(source string, transport string, sourceCtx *types.SystemContex
 		}
 		desc.DirBasePath = source
 		var err error
-		desc.TaggedImages, err = imagesToCopyFromDir(source)
+		desc.ImageRefs, err = imagesToCopyFromDir(source)
 		if err != nil {
 			return descriptors, err
 		}
-		if len(desc.TaggedImages) == 0 {
+		if len(desc.ImageRefs) == 0 {
 			return descriptors, errors.Errorf("No images to sync found in %q", source)
 		}
 		descriptors = append(descriptors, desc)
@@ -542,7 +556,7 @@ func (opts *syncOptions) run(args []string, stdout io.Writer) error {
 
 	for _, srcRepo := range srcRepoList {
 		options.SourceCtx = srcRepo.Context
-		for counter, ref := range srcRepo.TaggedImages {
+		for counter, ref := range srcRepo.ImageRefs {
 			var destSuffix string
 			switch ref.Transport() {
 			case docker.Transport:
@@ -569,13 +583,13 @@ func (opts *syncOptions) run(args []string, stdout io.Writer) error {
 			logrus.WithFields(logrus.Fields{
 				"from": transports.ImageName(ref),
 				"to":   transports.ImageName(destRef),
-			}).Infof("Copying image tag %d/%d", counter+1, len(srcRepo.TaggedImages))
+			}).Infof("Copying image ref %d/%d", counter+1, len(srcRepo.ImageRefs))
 
 			if err = retry.RetryIfNecessary(ctx, func() error {
 				_, err = copy.Image(ctx, policyContext, destRef, ref, &options)
 				return err
 			}, opts.retryOpts); err != nil {
-				return errors.Wrapf(err, "Error copying tag %q", transports.ImageName(ref))
+				return errors.Wrapf(err, "Error copying ref %q", transports.ImageName(ref))
 			}
 			imagesNumber++
 		}
