@@ -15,6 +15,9 @@ Uses the system's trust policy to validate images, rejects images not trusted by
 
   _destination-image_ use the "image name" format described above
 
+_source-image_ and _destination-image_ are interpreted completely independently; e.g. the destination name does not
+automatically inherit any parts of the source name.
+
 ## OPTIONS
 
 **--all**
