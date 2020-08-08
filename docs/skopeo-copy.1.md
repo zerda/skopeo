@@ -83,6 +83,11 @@ Existing signatures, if any, are preserved as well.
 
 ## EXAMPLES
 
+To just copy an image from one registry to another:
+```sh
+$ skopeo copy docker://quay.io/skopeo/stable:latest docker://registry.example.com/skopeo:latest
+```
+
 To copy the layers of the docker.io busybox image to a local directory:
 ```sh
 $ mkdir -p /var/lib/images/busybox
