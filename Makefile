@@ -25,6 +25,9 @@ BASHINSTALLDIR=${PREFIX}/share/bash-completion/completions
 
 GO ?= go
 GOBIN := $(shell $(GO) env GOBIN)
+GOOS ?= $(shell go env GOOS)
+GOARCH ?= $(shell go env GOARCH)
+
 ifeq ($(GOBIN),)
 GOBIN := $(GOPATH)/bin
 endif
@@ -43,8 +46,10 @@ ifeq ($(DEBUG), 1)
   override GOGCFLAGS += -N -l
 endif
 
-ifeq ($(shell $(GO) env GOOS), linux)
-  GO_DYN_FLAGS="-buildmode=pie"
+ifeq ($(GOOS), linux)
+  ifneq ($(GOARCH),$(filter $(GOARCH),mips mipsle mips64 mips64le ppc64 riscv64))
+    GO_DYN_FLAGS="-buildmode=pie"
+  endif
 endif
 
 GIT_BRANCH := $(shell git rev-parse --abbrev-ref HEAD 2>/dev/null)
