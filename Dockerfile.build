@@ -1,13 +1,9 @@
-FROM ubuntu:20.04
+FROM golang:1.14-buster
 
-RUN apt-get update && apt-get install -y \
-    golang \
-    libbtrfs-dev \
-    git-core \
-    libdevmapper-dev \
-    libgpgme11-dev \
-    go-md2man \
-    libglib2.0-dev
+RUN apt-get update && \
+    apt-get install -y \
+        libdevmapper-dev \
+        libgpgme11-dev
 
 ENV GOPATH=/
 WORKDIR /src/github.com/containers/skopeo
