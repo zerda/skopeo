@@ -94,7 +94,7 @@ func (s *SyncSuite) TestDocker2DirTagged(c *check.C) {
 	c.Assert(err, check.IsNil)
 	defer os.RemoveAll(tmpDir)
 
-	// FIXME: It would be nice to use one of the local Docker registries instead of neeeding an Internet connection.
+	// FIXME: It would be nice to use one of the local Docker registries instead of needing an Internet connection.
 	image := "busybox:latest"
 	imageRef, err := docker.ParseReference(fmt.Sprintf("//%s", image))
 	c.Assert(err, check.IsNil)
@@ -118,7 +118,7 @@ func (s *SyncSuite) TestDocker2DirTagged(c *check.C) {
 }
 
 func (s *SyncSuite) TestScoped(c *check.C) {
-	// FIXME: It would be nice to use one of the local Docker registries instead of neeeding an Internet connection.
+	// FIXME: It would be nice to use one of the local Docker registries instead of needing an Internet connection.
 	image := "busybox:latest"
 	imageRef, err := docker.ParseReference(fmt.Sprintf("//%s", image))
 	c.Assert(err, check.IsNil)
@@ -138,7 +138,7 @@ func (s *SyncSuite) TestScoped(c *check.C) {
 }
 
 func (s *SyncSuite) TestDirIsNotOverwritten(c *check.C) {
-	// FIXME: It would be nice to use one of the local Docker registries instead of neeeding an Internet connection.
+	// FIXME: It would be nice to use one of the local Docker registries instead of needing an Internet connection.
 	image := "busybox:latest"
 	imageRef, err := docker.ParseReference(fmt.Sprintf("//%s", image))
 	c.Assert(err, check.IsNil)
@@ -173,7 +173,7 @@ func (s *SyncSuite) TestDocker2DirUntagged(c *check.C) {
 	c.Assert(err, check.IsNil)
 	defer os.RemoveAll(tmpDir)
 
-	// FIXME: It would be nice to use one of the local Docker registries instead of neeeding an Internet connection.
+	// FIXME: It would be nice to use one of the local Docker registries instead of needing an Internet connection.
 	image := "alpine"
 	imageRef, err := docker.ParseReference(fmt.Sprintf("//%s", image))
 	c.Assert(err, check.IsNil)
@@ -350,7 +350,7 @@ func (s *SyncSuite) TestYamlTLSVerify(c *check.C) {
 	image := "busybox"
 	tag := "latest"
 
-	// FIXME: It would be nice to use one of the local Docker registries instead of neeeding an Internet connection.
+	// FIXME: It would be nice to use one of the local Docker registries instead of needing an Internet connection.
 	// copy docker => docker
 	assertSkopeoSucceeds(c, "", "copy", "--dest-tls-verify=false", "docker://"+image+":"+tag, localRegURL+image+":"+tag)
 
@@ -403,7 +403,7 @@ func (s *SyncSuite) TestDocker2DockerTagged(c *check.C) {
 	c.Assert(err, check.IsNil)
 	defer os.RemoveAll(tmpDir)
 
-	// FIXME: It would be nice to use one of the local Docker registries instead of neeeding an Internet connection.
+	// FIXME: It would be nice to use one of the local Docker registries instead of needing an Internet connection.
 	image := "busybox:latest"
 	imageRef, err := docker.ParseReference(fmt.Sprintf("//%s", image))
 	c.Assert(err, check.IsNil)
@@ -436,7 +436,7 @@ func (s *SyncSuite) TestDir2DockerTagged(c *check.C) {
 	c.Assert(err, check.IsNil)
 	defer os.RemoveAll(tmpDir)
 
-	// FIXME: It would be nice to use one of the local Docker registries instead of neeeding an Internet connection.
+	// FIXME: It would be nice to use one of the local Docker registries instead of needing an Internet connection.
 	image := "busybox:latest"
 
 	dir1 := path.Join(tmpDir, "dir1")

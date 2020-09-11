@@ -52,7 +52,7 @@ Path of the authentication file for the destination registry. Uses path given by
 
 **--encryption-key** _protocol:keyfile_ specifies the encryption protocol, which can be JWE (RFC7516), PGP (RFC4880), and PKCS7 (RFC2315) and the key material required for image encryption. For instance, jwe:/path/to/key.pem or pgp:admin@example.com or pkcs7:/path/to/x509-file.
 
-**--decryption-key** _key[:passphrase]_ to be used for decryption of images. Key can point to keys and/or certificates. Decryption will be tried with all keys. If the key is protected by a passphrase, it is required to be passed in the argument and ommitted otherwise.
+**--decryption-key** _key[:passphrase]_ to be used for decryption of images. Key can point to keys and/or certificates. Decryption will be tried with all keys. If the key is protected by a passphrase, it is required to be passed in the argument and omitted otherwise.
 
 **--src-creds** _username[:password]_ for accessing the source registry
 

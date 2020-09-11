@@ -153,7 +153,7 @@ func (opts *inspectOptions) run(args []string, stdout io.Writer) (retErr error) 
 		Name: "", // Set below if DockerReference() is known
 		Tag:  imgInspect.Tag,
 		// Digest is set below.
-		RepoTags:      []string{}, // Possibly overriden for docker.Transport.
+		RepoTags:      []string{}, // Possibly overridden for docker.Transport.
 		Created:       imgInspect.Created,
 		DockerVersion: imgInspect.DockerVersion,
 		Labels:        imgInspect.Labels,
