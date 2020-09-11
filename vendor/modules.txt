@@ -92,7 +92,7 @@ github.com/containers/ocicrypt/keywrap/pgp
 github.com/containers/ocicrypt/keywrap/pkcs7
 github.com/containers/ocicrypt/spec
 github.com/containers/ocicrypt/utils
-# github.com/containers/storage v1.23.4
+# github.com/containers/storage v1.23.5
 github.com/containers/storage
 github.com/containers/storage/drivers
 github.com/containers/storage/drivers/aufs
@@ -204,7 +204,7 @@ github.com/hashicorp/golang-lru/simplelru
 github.com/imdario/mergo
 # github.com/inconshreveable/mousetrap v1.0.0
 github.com/inconshreveable/mousetrap
-# github.com/klauspost/compress v1.10.11
+# github.com/klauspost/compress v1.11.0
 github.com/klauspost/compress/flate
 github.com/klauspost/compress/fse
 github.com/klauspost/compress/huff0
