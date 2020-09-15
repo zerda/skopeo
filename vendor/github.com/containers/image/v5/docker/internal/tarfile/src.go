@@ -11,8 +11,8 @@ import (
 	"path"
 	"sync"
 
+	"github.com/containers/image/v5/docker/reference"
 	"github.com/containers/image/v5/internal/iolimits"
-	"github.com/containers/image/v5/internal/tmpdir"
 	"github.com/containers/image/v5/manifest"
 	"github.com/containers/image/v5/pkg/compression"
 	"github.com/containers/image/v5/types"
@@ -22,8 +22,11 @@ import (
 
 // Source is a partial implementation of types.ImageSource for reading from tarPath.
 type Source struct {
-	tarPath              string
-	removeTarPathOnClose bool // Remove temp file on close if true
+	archive      *Reader
+	closeArchive bool // .Close() the archive when the source is closed.
+	// If ref is nil and sourceIndex is -1, indicates the only image in the archive.
+	ref         reference.NamedTagged // May be nil
+	sourceIndex int                   // May be -1
 	// The following data is only available after ensureCachedDataIsPresent() succeeds
 	tarManifest       *ManifestItem // nil if not available yet.
 	configBytes       []byte
@@ -41,180 +44,16 @@ type layerInfo struct {
 	size int64
 }
 
-// TODO: We could add support for multiple images in a single archive, so
-//       that people could use docker-archive:opensuse.tar:opensuse:leap as
-//       the source of an image.
-// 	To do for both the NewSourceFromFile and NewSourceFromStream functions
-
-// NewSourceFromFile returns a tarfile.Source for the specified path.
-// Deprecated: Please use NewSourceFromFileWithContext which will allows you to configure temp directory
-// for big files through SystemContext.BigFilesTemporaryDir
-func NewSourceFromFile(path string) (*Source, error) {
-	return NewSourceFromFileWithContext(nil, path)
-}
-
-// NewSourceFromFileWithContext returns a tarfile.Source for the specified path.
-func NewSourceFromFileWithContext(sys *types.SystemContext, path string) (*Source, error) {
-	file, err := os.Open(path)
-	if err != nil {
-		return nil, errors.Wrapf(err, "error opening file %q", path)
-	}
-	defer file.Close()
-
-	// If the file is already not compressed we can just return the file itself
-	// as a source. Otherwise we pass the stream to NewSourceFromStream.
-	stream, isCompressed, err := compression.AutoDecompress(file)
-	if err != nil {
-		return nil, errors.Wrapf(err, "Error detecting compression for file %q", path)
-	}
-	defer stream.Close()
-	if !isCompressed {
-		return &Source{
-			tarPath: path,
-		}, nil
-	}
-	return NewSourceFromStreamWithSystemContext(sys, stream)
-}
-
-// NewSourceFromStream returns a tarfile.Source for the specified inputStream,
-// which can be either compressed or uncompressed. The caller can close the
-// inputStream immediately after NewSourceFromFile returns.
-// Deprecated: Please use NewSourceFromStreamWithSystemContext which will allows you to configure
-// temp directory for big files through SystemContext.BigFilesTemporaryDir
-func NewSourceFromStream(inputStream io.Reader) (*Source, error) {
-	return NewSourceFromStreamWithSystemContext(nil, inputStream)
-}
-
-// NewSourceFromStreamWithSystemContext returns a tarfile.Source for the specified inputStream,
-// which can be either compressed or uncompressed. The caller can close the
-// inputStream immediately after NewSourceFromFile returns.
-func NewSourceFromStreamWithSystemContext(sys *types.SystemContext, inputStream io.Reader) (*Source, error) {
-	// FIXME: use SystemContext here.
-	// Save inputStream to a temporary file
-	tarCopyFile, err := ioutil.TempFile(tmpdir.TemporaryDirectoryForBigFiles(sys), "docker-tar")
-	if err != nil {
-		return nil, errors.Wrap(err, "error creating temporary file")
-	}
-	defer tarCopyFile.Close()
-
-	succeeded := false
-	defer func() {
-		if !succeeded {
-			os.Remove(tarCopyFile.Name())
-		}
-	}()
-
-	// In order to be compatible with docker-load, we need to support
-	// auto-decompression (it's also a nice quality-of-life thing to avoid
-	// giving users really confusing "invalid tar header" errors).
-	uncompressedStream, _, err := compression.AutoDecompress(inputStream)
-	if err != nil {
-		return nil, errors.Wrap(err, "Error auto-decompressing input")
-	}
-	defer uncompressedStream.Close()
-
-	// Copy the plain archive to the temporary file.
-	//
-	// TODO: This can take quite some time, and should ideally be cancellable
-	//       using a context.Context.
-	if _, err := io.Copy(tarCopyFile, uncompressedStream); err != nil {
-		return nil, errors.Wrapf(err, "error copying contents to temporary file %q", tarCopyFile.Name())
-	}
-	succeeded = true
-
+// NewSource returns a tarfile.Source for an image in the specified archive matching ref
+// and sourceIndex (or the only image if they are (nil, -1)).
+// The archive will be closed if closeArchive
+func NewSource(archive *Reader, closeArchive bool, ref reference.NamedTagged, sourceIndex int) *Source {
 	return &Source{
-		tarPath:              tarCopyFile.Name(),
-		removeTarPathOnClose: true,
-	}, nil
-}
-
-// tarReadCloser is a way to close the backing file of a tar.Reader when the user no longer needs the tar component.
-type tarReadCloser struct {
-	*tar.Reader
-	backingFile *os.File
-}
-
-func (t *tarReadCloser) Close() error {
-	return t.backingFile.Close()
-}
-
-// openTarComponent returns a ReadCloser for the specific file within the archive.
-// This is linear scan; we assume that the tar file will have a fairly small amount of files (~layers),
-// and that filesystem caching will make the repeated seeking over the (uncompressed) tarPath cheap enough.
-// The caller should call .Close() on the returned stream.
-func (s *Source) openTarComponent(componentPath string) (io.ReadCloser, error) {
-	f, err := os.Open(s.tarPath)
-	if err != nil {
-		return nil, err
+		archive:      archive,
+		closeArchive: closeArchive,
+		ref:          ref,
+		sourceIndex:  sourceIndex,
 	}
-	succeeded := false
-	defer func() {
-		if !succeeded {
-			f.Close()
-		}
-	}()
-
-	tarReader, header, err := findTarComponent(f, componentPath)
-	if err != nil {
-		return nil, err
-	}
-	if header == nil {
-		return nil, os.ErrNotExist
-	}
-	if header.FileInfo().Mode()&os.ModeType == os.ModeSymlink { // FIXME: untested
-		// We follow only one symlink; so no loops are possible.
-		if _, err := f.Seek(0, io.SeekStart); err != nil {
-			return nil, err
-		}
-		// The new path could easily point "outside" the archive, but we only compare it to existing tar headers without extracting the archive,
-		// so we don't care.
-		tarReader, header, err = findTarComponent(f, path.Join(path.Dir(componentPath), header.Linkname))
-		if err != nil {
-			return nil, err
-		}
-		if header == nil {
-			return nil, os.ErrNotExist
-		}
-	}
-
-	if !header.FileInfo().Mode().IsRegular() {
-		return nil, errors.Errorf("Error reading tar archive component %s: not a regular file", header.Name)
-	}
-	succeeded = true
-	return &tarReadCloser{Reader: tarReader, backingFile: f}, nil
-}
-
-// findTarComponent returns a header and a reader matching path within inputFile,
-// or (nil, nil, nil) if not found.
-func findTarComponent(inputFile io.Reader, path string) (*tar.Reader, *tar.Header, error) {
-	t := tar.NewReader(inputFile)
-	for {
-		h, err := t.Next()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return nil, nil, err
-		}
-		if h.Name == path {
-			return t, h, nil
-		}
-	}
-	return nil, nil, nil
-}
-
-// readTarComponent returns full contents of componentPath.
-func (s *Source) readTarComponent(path string, limit int) ([]byte, error) {
-	file, err := s.openTarComponent(path)
-	if err != nil {
-		return nil, errors.Wrapf(err, "Error loading tar component %s", path)
-	}
-	defer file.Close()
-	bytes, err := iolimits.ReadAtMost(file, limit)
-	if err != nil {
-		return nil, err
-	}
-	return bytes, nil
 }
 
 // ensureCachedDataIsPresent loads data necessary for any of the public accessors.
@@ -229,37 +68,31 @@ func (s *Source) ensureCachedDataIsPresent() error {
 // ensureCachedDataIsPresentPrivate is a private implementation detail of ensureCachedDataIsPresent.
 // Call ensureCachedDataIsPresent instead.
 func (s *Source) ensureCachedDataIsPresentPrivate() error {
-	// Read and parse manifest.json
-	tarManifest, err := s.loadTarManifest()
+	tarManifest, _, err := s.archive.ChooseManifestItem(s.ref, s.sourceIndex)
 	if err != nil {
 		return err
 	}
 
-	// Check to make sure length is 1
-	if len(tarManifest) != 1 {
-		return errors.Errorf("Unexpected tar manifest.json: expected 1 item, got %d", len(tarManifest))
-	}
-
 	// Read and parse config.
-	configBytes, err := s.readTarComponent(tarManifest[0].Config, iolimits.MaxConfigBodySize)
+	configBytes, err := s.archive.readTarComponent(tarManifest.Config, iolimits.MaxConfigBodySize)
 	if err != nil {
 		return err
 	}
 	var parsedConfig manifest.Schema2Image // There's a lot of info there, but we only really care about layer DiffIDs.
 	if err := json.Unmarshal(configBytes, &parsedConfig); err != nil {
-		return errors.Wrapf(err, "Error decoding tar config %s", tarManifest[0].Config)
+		return errors.Wrapf(err, "Error decoding tar config %s", tarManifest.Config)
 	}
 	if parsedConfig.RootFS == nil {
-		return errors.Errorf("Invalid image config (rootFS is not set): %s", tarManifest[0].Config)
+		return errors.Errorf("Invalid image config (rootFS is not set): %s", tarManifest.Config)
 	}
 
-	knownLayers, err := s.prepareLayerData(&tarManifest[0], &parsedConfig)
+	knownLayers, err := s.prepareLayerData(tarManifest, &parsedConfig)
 	if err != nil {
 		return err
 	}
 
 	// Success; commit.
-	s.tarManifest = &tarManifest[0]
+	s.tarManifest = tarManifest
 	s.configBytes = configBytes
 	s.configDigest = digest.FromBytes(configBytes)
 	s.orderedDiffIDList = parsedConfig.RootFS.DiffIDs
@@ -267,31 +100,17 @@ func (s *Source) ensureCachedDataIsPresentPrivate() error {
 	return nil
 }
 
-// loadTarManifest loads and decodes the manifest.json.
-func (s *Source) loadTarManifest() ([]ManifestItem, error) {
-	// FIXME? Do we need to deal with the legacy format?
-	bytes, err := s.readTarComponent(manifestFileName, iolimits.MaxTarFileManifestSize)
-	if err != nil {
-		return nil, err
-	}
-	var items []ManifestItem
-	if err := json.Unmarshal(bytes, &items); err != nil {
-		return nil, errors.Wrap(err, "Error decoding tar manifest.json")
-	}
-	return items, nil
-}
-
 // Close removes resources associated with an initialized Source, if any.
 func (s *Source) Close() error {
-	if s.removeTarPathOnClose {
-		return os.Remove(s.tarPath)
+	if s.closeArchive {
+		return s.archive.Close()
 	}
 	return nil
 }
 
-// LoadTarManifest loads and decodes the manifest.json
-func (s *Source) LoadTarManifest() ([]ManifestItem, error) {
-	return s.loadTarManifest()
+// TarManifest returns contents of manifest.json
+func (s *Source) TarManifest() []ManifestItem {
+	return s.archive.Manifest
 }
 
 func (s *Source) prepareLayerData(tarManifest *ManifestItem, parsedConfig *manifest.Schema2Image) (map[digest.Digest]*layerInfo, error) {
@@ -308,7 +127,7 @@ func (s *Source) prepareLayerData(tarManifest *ManifestItem, parsedConfig *manif
 			// which of the tarManifest.Layers paths is used; (docker save) actually makes the duplicates symlinks to the original.
 			continue
 		}
-		layerPath := tarManifest.Layers[i]
+		layerPath := path.Clean(tarManifest.Layers[i])
 		if _, ok := unknownLayerSizes[layerPath]; ok {
 			return nil, errors.Errorf("Layer tarfile %s used for two different DiffID values", layerPath)
 		}
@@ -321,7 +140,7 @@ func (s *Source) prepareLayerData(tarManifest *ManifestItem, parsedConfig *manif
 	}
 
 	// Scan the tar file to collect layer sizes.
-	file, err := os.Open(s.tarPath)
+	file, err := os.Open(s.archive.path)
 	if err != nil {
 		return nil, err
 	}
@@ -335,7 +154,9 @@ func (s *Source) prepareLayerData(tarManifest *ManifestItem, parsedConfig *manif
 		if err != nil {
 			return nil, err
 		}
-		if li, ok := unknownLayerSizes[h.Name]; ok {
+		layerPath := path.Clean(h.Name)
+		// FIXME: Cache this data across images in Reader.
+		if li, ok := unknownLayerSizes[layerPath]; ok {
 			// Since GetBlob will decompress layers that are compressed we need
 			// to do the decompression here as well, otherwise we will
 			// incorrectly report the size. Pretty critical, since tools like
@@ -343,7 +164,7 @@ func (s *Source) prepareLayerData(tarManifest *ManifestItem, parsedConfig *manif
 			// the slower method of checking if it's compressed.
 			uncompressedStream, isCompressed, err := compression.AutoDecompress(t)
 			if err != nil {
-				return nil, errors.Wrapf(err, "Error auto-decompressing %s to determine its size", h.Name)
+				return nil, errors.Wrapf(err, "Error auto-decompressing %s to determine its size", layerPath)
 			}
 			defer uncompressedStream.Close()
 
@@ -351,11 +172,11 @@ func (s *Source) prepareLayerData(tarManifest *ManifestItem, parsedConfig *manif
 			if isCompressed {
 				uncompressedSize, err = io.Copy(ioutil.Discard, uncompressedStream)
 				if err != nil {
-					return nil, errors.Wrapf(err, "Error reading %s to find its size", h.Name)
+					return nil, errors.Wrapf(err, "Error reading %s to find its size", layerPath)
 				}
 			}
 			li.size = uncompressedSize
-			delete(unknownLayerSizes, h.Name)
+			delete(unknownLayerSizes, layerPath)
 		}
 	}
 	if len(unknownLayerSizes) != 0 {
@@ -446,7 +267,7 @@ func (s *Source) GetBlob(ctx context.Context, info types.BlobInfo, cache types.B
 	}
 
 	if li, ok := s.knownLayers[info.Digest]; ok { // diffID is a digest of the uncompressed tarball,
-		underlyingStream, err := s.openTarComponent(li.path)
+		underlyingStream, err := s.archive.openTarComponent(li.path)
 		if err != nil {
 			return nil, 0, err
 		}
