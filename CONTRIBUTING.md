@@ -134,7 +134,7 @@ When new PRs for [containers/image](https://github.com/containers/image) break `
 - create out a new branch in your `skopeo` checkout and switch to it
 - update `vendor.conf`. Find out the `containers/image` dependency; update it to vendor from your own branch and your own repository fork (e.g. `github.com/containers/image my-branch https://github.com/runcom/image`)
 - run `make vendor`
-- make any other necessary changes in the skopeo repo (e.g. add other dependencies now requied by `containers/image`, or update skopeo for changed `containers/image` API)
+- make any other necessary changes in the skopeo repo (e.g. add other dependencies now required by `containers/image`, or update skopeo for changed `containers/image` API)
 - optionally add new integration tests to the skopeo repo
 - submit the resulting branch as a skopeo PR, marked “DO NOT MERGE”
 - iterate until tests pass and the PR is reviewed

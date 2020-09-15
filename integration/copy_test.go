@@ -488,7 +488,7 @@ func (s *CopySuite) TestCopySimpleAtomicRegistry(c *check.C) {
 	c.Assert(err, check.IsNil)
 	defer os.RemoveAll(dir2)
 
-	// FIXME: It would be nice to use one of the local Docker registries instead of neeeding an Internet connection.
+	// FIXME: It would be nice to use one of the local Docker registries instead of needing an Internet connection.
 	// "pull": docker: → dir:
 	assertSkopeoSucceeds(c, "", "copy", "docker://estesp/busybox:amd64", "dir:"+dir1)
 	// "push": dir: → atomic:
@@ -509,7 +509,7 @@ func (s *CopySuite) TestCopySimple(c *check.C) {
 	c.Assert(err, check.IsNil)
 	defer os.RemoveAll(dir2)
 
-	// FIXME: It would be nice to use one of the local Docker registries instead of neeeding an Internet connection.
+	// FIXME: It would be nice to use one of the local Docker registries instead of needing an Internet connection.
 	// "pull": docker: → dir:
 	assertSkopeoSucceeds(c, "", "copy", "docker://busybox", "dir:"+dir1)
 	// "push": dir: → docker(v2s2):
@@ -626,7 +626,7 @@ func (s *CopySuite) TestCopyEncryption(c *check.C) {
 	// Since the image is partially encrypted we should find layers that aren't encrypted
 	matchLayerBlobBinaryType(c, partiallyEncryptedImgDir+"/blobs/sha256", "application/x-gzip", 2)
 
-	// Decrypt the partically encrypted image
+	// Decrypt the partially encrypted image
 	assertSkopeoSucceeds(c, "", "copy", "--decryption-key", keysDir+"/private.key",
 		"oci:"+partiallyEncryptedImgDir+":encrypted", "oci:"+partiallyDecryptedImgDir+":decrypted")
 
@@ -720,7 +720,7 @@ func (s *CopySuite) TestCopyStreaming(c *check.C) {
 	c.Assert(err, check.IsNil)
 	defer os.RemoveAll(dir2)
 
-	// FIXME: It would be nice to use one of the local Docker registries instead of neeeding an Internet connection.
+	// FIXME: It would be nice to use one of the local Docker registries instead of needing an Internet connection.
 	// streaming: docker: → atomic:
 	assertSkopeoSucceeds(c, "", "--tls-verify=false", "--debug", "copy", "docker://estesp/busybox:amd64", "atomic:localhost:5000/myns/unsigned:streaming")
 	// Compare (copies of) the original and the copy:
@@ -1087,7 +1087,7 @@ func (s *CopySuite) TestCopyVerifyingMirroredSignatures(c *check.C) {
 	defer os.Remove(policy)
 
 	// We use X-R-S-S for this testing to avoid having to deal with the sigstores.
-	// A downside is that OpenShift records signatures per image, so the error messsages below
+	// A downside is that OpenShift records signatures per image, so the error messages below
 	// list all signatures for other tags used for the same image as well.
 	// So, make sure to never create a signature that could be considered valid in a different part of the test (i.e. don't reuse tags).
 
@@ -1103,7 +1103,7 @@ func (s *CopySuite) TestCopyVerifyingMirroredSignatures(c *check.C) {
 
 	// Sign the image for the mirror
 	assertSkopeoSucceeds(c, "", "--registries.d", registriesDir, "copy", "--src-tls-verify=false", "--dest-tls-verify=false", "--sign-by", "personal@example.com", regPrefix+"primary:unsigned", regPrefix+"mirror:mirror-signed")
-	// Verify that a correctly signed image for the mirror is acessible using the mirror's reference
+	// Verify that a correctly signed image for the mirror is accessible using the mirror's reference
 	assertSkopeoSucceeds(c, "", "--policy", policy, "--registries.d", registriesDir, "--registries-conf", "fixtures/registries.conf", "copy", "--src-tls-verify=false", regPrefix+"mirror:mirror-signed", dirDest)
 	// … but verify that while it is accessible using the primary location redirecting to the mirror, …
 	assertSkopeoSucceeds(c, "" /* no --policy */, "--registries-conf", "fixtures/registries.conf", "copy", "--src-tls-verify=false", regPrefix+"primary:mirror-signed", dirDest)

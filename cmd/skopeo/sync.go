@@ -26,7 +26,7 @@ import (
 
 // syncOptions contains information retrieved from the skopeo sync command line.
 type syncOptions struct {
-	global            *globalOptions    // Global (not command dependant) skopeo options
+	global            *globalOptions    // Global (not command dependent) skopeo options
 	srcImage          *imageOptions     // Source image options
 	destImage         *imageDestOptions // Destination image options
 	retryOpts         *retry.RetryOptions

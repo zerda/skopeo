@@ -157,7 +157,7 @@ func (opts *imageOptions) newSystemContext() (*types.SystemContext, error) {
 	return ctx, nil
 }
 
-// imageDestOptions is a superset of imageOptions specialized for iamge destinations.
+// imageDestOptions is a superset of imageOptions specialized for image destinations.
 type imageDestOptions struct {
 	*imageOptions
 	dirForceCompression         bool        // Compress layers when saving to the dir: transport
