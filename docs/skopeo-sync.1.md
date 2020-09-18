@@ -71,6 +71,10 @@ Path of the authentication file for the destination registry. Uses path given by
 
 **--dest-tls-verify** _bool-value_ Require HTTPS and verify certificates when talking to a container destination registry or daemon (defaults to true).
 
+**--src-registry-token** _Bearer token_ for accessing the source registry.
+
+**--dest-registry-token** _Bearer token_ for accessing the destination registry.
+
 ## EXAMPLES
 
 ### Synchronizing to a local directory

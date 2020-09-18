@@ -54,6 +54,7 @@ func TestImageOptionsNewSystemContext(t *testing.T) {
 		"--dest-daemon-host", "daemon-host.example.com",
 		"--dest-tls-verify=false",
 		"--dest-creds", "creds-user:creds-password",
+		"--dest-registry-token", "faketoken",
 	})
 	res, err = opts.newSystemContext()
 	require.NoError(t, err)
@@ -67,6 +68,7 @@ func TestImageOptionsNewSystemContext(t *testing.T) {
 		DockerCertPath:                    "/srv/cert-dir",
 		DockerInsecureSkipTLSVerify:       types.OptionalBoolTrue,
 		DockerAuthConfig:                  &types.DockerAuthConfig{Username: "creds-user", Password: "creds-password"},
+		DockerBearerRegistryToken:         "faketoken",
 		DockerDaemonCertPath:              "/srv/cert-dir",
 		DockerDaemonHost:                  "daemon-host.example.com",
 		DockerDaemonInsecureSkipTLSVerify: true,
@@ -164,6 +166,7 @@ func TestImageDestOptionsNewSystemContext(t *testing.T) {
 		"--dest-daemon-host", "daemon-host.example.com",
 		"--dest-tls-verify=false",
 		"--dest-creds", "creds-user:creds-password",
+		"--dest-registry-token", "faketoken",
 	})
 	res, err = opts.newSystemContext()
 	require.NoError(t, err)
@@ -177,6 +180,7 @@ func TestImageDestOptionsNewSystemContext(t *testing.T) {
 		DockerCertPath:                    "/srv/cert-dir",
 		DockerInsecureSkipTLSVerify:       types.OptionalBoolTrue,
 		DockerAuthConfig:                  &types.DockerAuthConfig{Username: "creds-user", Password: "creds-password"},
+		DockerBearerRegistryToken:         "faketoken",
 		DockerDaemonCertPath:              "/srv/cert-dir",
 		DockerDaemonHost:                  "daemon-host.example.com",
 		DockerDaemonInsecureSkipTLSVerify: true,

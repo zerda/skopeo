@@ -54,25 +54,25 @@ Path of the authentication file for the destination registry. Uses path given by
 
 **--decryption-key** _key[:passphrase]_ to be used for decryption of images. Key can point to keys and/or certificates. Decryption will be tried with all keys. If the key is protected by a passphrase, it is required to be passed in the argument and omitted otherwise.
 
-**--src-creds** _username[:password]_ for accessing the source registry
+**--src-creds** _username[:password]_ for accessing the source registry.
 
-**--dest-compress** _bool-value_ Compress tarball image layers when saving to directory using the 'dir' transport. (default is same compression type as source)
+**--dest-compress** _bool-value_ Compress tarball image layers when saving to directory using the 'dir' transport. (default is same compression type as source).
 
-**--dest-oci-accept-uncompressed-layers** _bool-value_ Allow uncompressed image layers when saving to an OCI image using the 'oci' transport. (default is to compress things that aren't compressed)
+**--dest-oci-accept-uncompressed-layers** _bool-value_ Allow uncompressed image layers when saving to an OCI image using the 'oci' transport. (default is to compress things that aren't compressed).
 
-**--dest-creds** _username[:password]_ for accessing the destination registry
+**--dest-creds** _username[:password]_ for accessing the destination registry.
 
-**--src-cert-dir** _path_ Use certificates at _path_ (*.crt, *.cert, *.key) to connect to the source registry or daemon
+**--src-cert-dir** _path_ Use certificates at _path_ (*.crt, *.cert, *.key) to connect to the source registry or daemon.
 
 **--src-no-creds** _bool-value_ Access the registry anonymously.
 
-**--src-tls-verify** _bool-value_ Require HTTPS and verify certificates when talking to container source registry or daemon (defaults to true)
+**--src-tls-verify** _bool-value_ Require HTTPS and verify certificates when talking to container source registry or daemon (defaults to true).
 
-**--dest-cert-dir** _path_ Use certificates at _path_ (*.crt, *.cert, *.key) to connect to the destination registry or daemon
+**--dest-cert-dir** _path_ Use certificates at _path_ (*.crt, *.cert, *.key) to connect to the destination registry or daemon.
 
 **--dest-no-creds** _bool-value_  Access the registry anonymously.
 
-**--dest-tls-verify** _bool-value_ Require HTTPS and verify certificates when talking to container destination registry or daemon (defaults to true)
+**--dest-tls-verify** _bool-value_ Require HTTPS and verify certificates when talking to container destination registry or daemon (defaults to true).
 
 **--src-daemon-host** _host_ Copy from docker daemon at _host_. If _host_ starts with `tcp://`, HTTPS is enabled by default. To use plain HTTP, use the form `http://` (default is `unix:///var/run/docker.sock`).
 
@@ -83,6 +83,10 @@ Existing signatures, if any, are preserved as well.
 **--dest-compress-format** _format_ Specifies the compression format to use.  Supported values are: `gzip` and `zstd`.
 
 **--dest-compress-level** _format_ Specifies the compression level to use.  The value is specific to the compression algorithm used, e.g. for zstd the accepted values are in the range 1-20 (inclusive), while for gzip it is 1-9 (inclusive).
+
+**--src-registry-token** _Bearer token_ for accessing the source registry.
+
+**--dest-registry-token** _Bearer token_ for accessing the destination registry.
 
 ## EXAMPLES
 

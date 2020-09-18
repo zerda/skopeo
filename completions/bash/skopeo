@@ -49,6 +49,8 @@ _skopeo_copy() {
     --dest-tls-verify
     --src-daemon-host
     --dest-daemon-host
+    --src-registry-token
+    --dest-registry-token
     "
 
     local boolean_options="
@@ -74,6 +76,7 @@ _skopeo_inspect() {
      --creds
      --cert-dir
      --retry-times
+     --registry-token
      "
      local boolean_options="
      --config
@@ -120,6 +123,7 @@ _skopeo_delete() {
      --authfile
      --creds
      --cert-dir
+     --registry-token
      "
      local boolean_options="
      --tls-verify
@@ -136,11 +140,14 @@ _skopeo_delete() {
 
 _skopeo_layers() {
      local options_with_args="
+       --authfile
        --creds
        --cert-dir
+       --registry-token
      "
      local boolean_options="
        --tls-verify
+       --no-creds
      "
     _complete_ "$options_with_args" "$boolean_options"
 }
@@ -150,6 +157,7 @@ _skopeo_list_repository_tags() {
      --authfile
      --creds
      --cert-dir
+     --registry-token
      "
 
      local boolean_options="
