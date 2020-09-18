@@ -54,6 +54,7 @@ func TestImageOptionsNewSystemContext(t *testing.T) {
 		"--dest-daemon-host", "daemon-host.example.com",
 		"--dest-tls-verify=false",
 		"--dest-creds", "creds-user:creds-password",
+		"--dest-registry-token", "faketoken",
 	})
 	res, err = opts.newSystemContext()
 	require.NoError(t, err)
@@ -71,6 +72,7 @@ func TestImageOptionsNewSystemContext(t *testing.T) {
 		DockerDaemonHost:                  "daemon-host.example.com",
 		DockerDaemonInsecureSkipTLSVerify: true,
 		BigFilesTemporaryDir:              "/srv",
+		DockerBearerRegistryToken:         "faketoken",
 	}, res)
 
 	// Global/per-command tlsVerify behavior
@@ -164,6 +166,7 @@ func TestImageDestOptionsNewSystemContext(t *testing.T) {
 		"--dest-daemon-host", "daemon-host.example.com",
 		"--dest-tls-verify=false",
 		"--dest-creds", "creds-user:creds-password",
+		"--dest-registry-token", "faketoken",
 	})
 	res, err = opts.newSystemContext()
 	require.NoError(t, err)
@@ -182,6 +185,7 @@ func TestImageDestOptionsNewSystemContext(t *testing.T) {
 		DockerDaemonInsecureSkipTLSVerify: true,
 		DirForceCompress:                  true,
 		BigFilesTemporaryDir:              "/srv",
+		DockerBearerRegistryToken:         "faketoken",
 	}, res)
 
 	// Invalid option values in imageOptions
