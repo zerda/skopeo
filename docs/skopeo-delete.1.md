@@ -24,17 +24,17 @@ $ docker exec -it registry /usr/bin/registry garbage-collect /etc/docker-distrib
   Path of the authentication file. Default is ${XDG_RUNTIME\_DIR}/containers/auth.json, which is set using `skopeo login`.
   If the authorization state is not found there, $HOME/.docker/config.json is checked, which is set using `docker login`.
 
-**--creds** _username[:password]_ for accessing the registry
+**--creds** _username[:password]_ for accessing the registry.
 
-**--cert-dir** _path_ Use certificates at _path_ (*.crt, *.cert, *.key) to connect to the registry
+**--cert-dir** _path_ Use certificates at _path_ (*.crt, *.cert, *.key) to connect to the registry.
 
-**--tls-verify** _bool-value_ Require HTTPS and verify certificates when talking to container registries (defaults to true)
+**--tls-verify** _bool-value_ Require HTTPS and verify certificates when talking to container registries (defaults to true).
 
 **--no-creds** _bool-value_ Access the registry anonymously.
 
 Additionally, the registry must allow deletions by setting `REGISTRY_STORAGE_DELETE_ENABLED=true` for the registry daemon.
 
-**--registry-token** _Bearer token_ for accessing the registry
+**--registry-token** _Bearer token_ for accessing the registry.
 
 ## EXAMPLES
 
