@@ -35,6 +35,8 @@ Return low-level information about _image-name_ in a registry
 
   **--no-creds** _bool-value_ Access the registry anonymously.
 
+  **--registry-token** _Bearer token_ for accessing the registry
+
 ## EXAMPLES
 
 To review information for the image fedora from the docker.io registry:

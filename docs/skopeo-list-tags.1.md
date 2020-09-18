@@ -23,6 +23,8 @@ Return a list of tags from _repository-name_ in a registry.
 
   **--no-creds** _bool-value_ Access the registry anonymously.
 
+  **--registry-token** _Bearer token_ for accessing the registry
+
 ## REPOSITORY NAMES
 
 Repository names are transport-specific references as each transport may have its own concept of a "repository" and "tags". Currently, only the Docker transport is supported.

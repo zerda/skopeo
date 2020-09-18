@@ -84,6 +84,10 @@ Existing signatures, if any, are preserved as well.
 
 **--dest-compress-level** _format_ Specifies the compression level to use.  The value is specific to the compression algorithm used, e.g. for zstd the accepted values are in the range 1-20 (inclusive), while for gzip it is 1-9 (inclusive).
 
+**--src-registry-token** _Bearer token_ for accessing the source registry
+
+**--dest-registry-token** _Bearer token_ for accessing the destination registry
+
 ## EXAMPLES
 
 To just copy an image from one registry to another:

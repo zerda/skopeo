@@ -34,6 +34,8 @@ $ docker exec -it registry /usr/bin/registry garbage-collect /etc/docker-distrib
 
 Additionally, the registry must allow deletions by setting `REGISTRY_STORAGE_DELETE_ENABLED=true` for the registry daemon.
 
+**--registry-token** _Bearer token_ for accessing the registry
+
 ## EXAMPLES
 
 Mark image example/pause for deletion from the registry.example.com registry:
