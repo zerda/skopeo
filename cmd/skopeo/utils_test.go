@@ -68,11 +68,11 @@ func TestImageOptionsNewSystemContext(t *testing.T) {
 		DockerCertPath:                    "/srv/cert-dir",
 		DockerInsecureSkipTLSVerify:       types.OptionalBoolTrue,
 		DockerAuthConfig:                  &types.DockerAuthConfig{Username: "creds-user", Password: "creds-password"},
+		DockerBearerRegistryToken:         "faketoken",
 		DockerDaemonCertPath:              "/srv/cert-dir",
 		DockerDaemonHost:                  "daemon-host.example.com",
 		DockerDaemonInsecureSkipTLSVerify: true,
 		BigFilesTemporaryDir:              "/srv",
-		DockerBearerRegistryToken:         "faketoken",
 	}, res)
 
 	// Global/per-command tlsVerify behavior
@@ -180,12 +180,12 @@ func TestImageDestOptionsNewSystemContext(t *testing.T) {
 		DockerCertPath:                    "/srv/cert-dir",
 		DockerInsecureSkipTLSVerify:       types.OptionalBoolTrue,
 		DockerAuthConfig:                  &types.DockerAuthConfig{Username: "creds-user", Password: "creds-password"},
+		DockerBearerRegistryToken:         "faketoken",
 		DockerDaemonCertPath:              "/srv/cert-dir",
 		DockerDaemonHost:                  "daemon-host.example.com",
 		DockerDaemonInsecureSkipTLSVerify: true,
 		DirForceCompress:                  true,
 		BigFilesTemporaryDir:              "/srv",
-		DockerBearerRegistryToken:         "faketoken",
 	}, res)
 
 	// Invalid option values in imageOptions

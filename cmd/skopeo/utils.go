@@ -93,10 +93,10 @@ func dockerImageFlags(global *globalOptions, shared *sharedImageOptions, flagPre
 		f := fs.VarPF(newOptionalStringValue(&flags.credsOption), credsOptionAlias, "", "Use `USERNAME[:PASSWORD]` for accessing the registry")
 		f.Hidden = true
 	}
+	fs.Var(newOptionalStringValue(&flags.registryToken), flagPrefix+"registry-token", "Provide a Bearer token for accessing the registry")
 	fs.StringVar(&flags.dockerCertPath, flagPrefix+"cert-dir", "", "use certificates at `PATH` (*.crt, *.cert, *.key) to connect to the registry or daemon")
 	optionalBoolFlag(&fs, &flags.tlsVerify, flagPrefix+"tls-verify", "require HTTPS and verify certificates when talking to the container registry or daemon (defaults to true)")
 	fs.BoolVar(&flags.noCreds, flagPrefix+"no-creds", false, "Access the registry anonymously")
-	fs.Var(newOptionalStringValue(&flags.registryToken), flagPrefix+"registry-token", "Provide a Bearer token for accessing the registry")
 	return fs, &flags
 }
 
@@ -133,9 +133,6 @@ func (opts *imageOptions) newSystemContext() (*types.SystemContext, error) {
 	ctx.AuthFilePath = opts.shared.authFilePath
 	ctx.DockerDaemonHost = opts.dockerDaemonHost
 	ctx.DockerDaemonCertPath = opts.dockerCertPath
-	if opts.registryToken.present {
-		ctx.DockerBearerRegistryToken = opts.registryToken.value
-	}
 	if opts.dockerImageOptions.authFilePath.present {
 		ctx.AuthFilePath = opts.dockerImageOptions.authFilePath.value
 	}
@@ -154,6 +151,9 @@ func (opts *imageOptions) newSystemContext() (*types.SystemContext, error) {
 		if err != nil {
 			return nil, err
 		}
+	}
+	if opts.registryToken.present {
+		ctx.DockerBearerRegistryToken = opts.registryToken.value
 	}
 	if opts.noCreds {
 		ctx.DockerAuthConfig = &types.DockerAuthConfig{}

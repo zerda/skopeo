@@ -140,11 +140,14 @@ _skopeo_delete() {
 
 _skopeo_layers() {
      local options_with_args="
+       --authfile
        --creds
        --cert-dir
+       --registry-token
      "
      local boolean_options="
        --tls-verify
+       --no-creds
      "
     _complete_ "$options_with_args" "$boolean_options"
 }
