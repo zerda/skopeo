@@ -17,7 +17,7 @@ const (
 )
 
 // ManifestItem is an element of the array stored in the top-level manifest.json file.
-type ManifestItem struct {
+type ManifestItem struct { // NOTE: This is visible as docker/tarfile.ManifestItem, and a part of the stable API.
 	Config       string
 	RepoTags     []string
 	Layers       []string
