@@ -1,36 +1,74 @@
 # Installing from packages
 
-`skopeo` may already be packaged in your distribution, for example on
-RHEL/CentOS ≥ 8 or Fedora you can install it using:
+## Distribution Packages
+`skopeo` may already be packaged in your distribution.
+
+### Fedora
 
 ```sh
-$ sudo dnf install skopeo
-```
-
-on RHEL/CentOS ≤ 7.x:
+$ sudo dnf -y install skopeo
+### RHEL/CentOS ≥ 8 and CentOS Stream
 
 ```sh
-$ sudo yum install skopeo
+$ sudo dnf -y install skopeo
 ```
 
-for openSUSE:
+Newer Skopeo releases may be available on the repositories provided by the
+Kubic project. Beware, these may not be suitable for production environments.
+
+on CentOS 8:
+
+```sh
+$ sudo dnf -y module disable container-tools
+$ sudo dnf -y install 'dnf-command(copr)'
+$ sudo dnf -y copr enable rhcontainerbot/container-selinux
+$ sudo curl -L -o /etc/yum.repos.d/devel:kubic:libcontainers:stable.repo https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/CentOS_8/devel:kubic:libcontainers:stable.repo
+$ sudo dnf -y install skopeo
+```
+
+on CentOS 8 Stream:
+
+```sh
+sudo dnf -y module disable container-tools
+sudo dnf -y install 'dnf-command(copr)'
+sudo dnf -y copr enable rhcontainerbot/container-selinux
+sudo curl -L -o /etc/yum.repos.d/devel:kubic:libcontainers:stable.repo https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/CentOS_8_Stream/devel:kubic:libcontainers:stable.repo
+sudo dnf -y install skopeo
+```
+
+### RHEL/CentOS ≤ 7.x
+
+```sh
+$ sudo yum -y install skopeo
+```
+
+Newer Skopeo releases may be available on the repositories provided by the
+Kubic project. Beware, these may not be suitable for production environments.
+
+```sh
+$ sudo curl -L -o /etc/yum.repos.d/devel:kubic:libcontainers:stable.repo https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/CentOS_7/devel:kubic:libcontainers:stable.repo
+$ sudo yum -y install skopeo
+```
+
+### openSUSE
 
 ```sh
 $ sudo zypper install skopeo
 ```
 
-on alpine:
+### Alpine
 
 ```sh
 $ sudo apk add skopeo
 ```
 
-on macOS:
+### macOS
 
 ```sh
 $ brew install skopeo
 ```
 
+### Debian ≥ 10 and Ubuntu ≥ 18.04
 Debian (10 and newer including Raspbian) and Ubuntu (18.04 and newer): Packages
 are available via the [Kubic][0] project repositories:
 
@@ -39,37 +77,37 @@ are available via the [Kubic][0] project repositories:
 ```bash
 # Debian Unstable/Sid:
 $ echo 'deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/Debian_Unstable/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list
-$ wget -nv https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable/Debian_Unstable/Release.key -O- | sudo apt-key add -
+$ curl -L https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/Debian_Unstable/Release.key | sudo apt-key add -
 ```
 
 ```bash
 # Debian Testing:
 $ echo 'deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/Debian_Testing/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list
-$ wget -nv https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable/Debian_Testing/Release.key -O- | sudo apt-key add -
+$ curl -L https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/Debian_Testing/Release.key | sudo apt-key add -
 ```
 
 ```bash
 # Debian 10:
 $ echo 'deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/Debian_10/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list
-$ wget -nv https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable/Debian_10/Release.key -O- | sudo apt-key add -
+$ curl -L https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/Debian_10/Release.key | sudo apt-key add -
 ```
 
 ```bash
 # Raspbian 10:
 $ echo 'deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/Raspbian_10/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list
-$ wget -nv https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable/Raspbian_10/Release.key -O- | sudo apt-key add -
+$ curl -L https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/Raspbian_10/Release.key | sudo apt-key add -
 ```
 
 ```bash
-# Ubuntu (18.04, 19.04 and 19.10):
+# Ubuntu (18.04, 19.04, 19.10 and 20.04):
 $ . /etc/os-release
 $ sudo sh -c "echo 'deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/x${NAME}_${VERSION_ID}/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list"
-$ wget -nv https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable/x${NAME}_${VERSION_ID}/Release.key -O- | sudo apt-key add -
+$ curl -L https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/x${NAME}_${VERSION_ID}/Release.key | sudo apt-key add -
 ```
 
 ```bash
-$ sudo apt-get update -qq
-$ sudo apt-get install skopeo
+$ sudo apt-get -y update
+$ sudo apt-get -y install skopeo
 ```
 
 Otherwise, read on for building and installing it from source:
@@ -78,6 +116,8 @@ To build the `skopeo` binary you need at least Go 1.12.
 
 There are two ways to build skopeo: in a container, or locally without a
 container. Choose the one which better matches your needs and environment.
+
+## Building from Source
 
 ### Building without a container
 
