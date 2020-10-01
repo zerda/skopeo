@@ -331,7 +331,8 @@ start_registry() {
             log_and_run openssl req -newkey rsa:4096 -nodes -sha256 \
                     -keyout $AUTHDIR/domain.key -x509 -days 2 \
                     -out $CERT \
-                    -subj "/C=US/ST=Foo/L=Bar/O=Red Hat, Inc./CN=localhost"
+                    -subj "/C=US/ST=Foo/L=Bar/O=Red Hat, Inc./CN=registry host certificate" \
+                    -addext subjectAltName=DNS:localhost
         fi
 
         reg_args+=(
