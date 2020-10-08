@@ -1,7 +1,7 @@
 % skopeo-standalone-sign(1)
 
 ## NAME
-skopeo\-standalone-sign - Simple Sign an image
+skopeo\-standalone-sign - Debugging tool - Publish and sign an image in one step.
 
 ## SYNOPSIS
 **skopeo standalone-sign** _manifest docker-reference key-fingerprint_ **--output**|**-o** _signature_

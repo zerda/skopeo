@@ -1,7 +1,7 @@
 % skopeo-login(1)
 
 ## NAME
-skopeo\-login - Login to a container registry
+skopeo\-login - Login to a container registry.
 
 ## SYNOPSIS
 **skopeo login** [*options*] *registry*

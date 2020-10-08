@@ -1,7 +1,7 @@
 % skopeo-logout(1)
 
 ## NAME
-skopeo\-logout - Logout of a container registry
+skopeo\-logout - Logout of a container registry.
 
 ## SYNOPSIS
 **skopeo logout** [*options*] *registry*

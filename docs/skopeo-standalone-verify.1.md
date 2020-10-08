@@ -1,7 +1,7 @@
 % skopeo-standalone-verify(1)
 
 ## NAME
-skopeo\-standalone\-verify - Verify an image signature
+skopeo\-standalone\-verify - Verify an image signature.
 
 ## SYNOPSIS
 **skopeo standalone-verify** _manifest docker-reference key-fingerprint signature_

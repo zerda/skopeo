@@ -1,7 +1,7 @@
 % skopeo-manifest-digest(1)
 
 ## NAME
-skopeo\-manifest\-digest -Compute a manifest digest of manifest-file and write it to standard output.
+skopeo\-manifest\-digest - Compute a manifest digest for a manifest-file and write it to standard output.
 
 ## SYNOPSIS
 **skopeo manifest-digest** _manifest-file_
