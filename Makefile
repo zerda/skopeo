@@ -86,10 +86,12 @@ endif
 #     Note: Uses the -N -l go compiler options to disable compiler optimizations
 #           and inlining. Using these build options allows you to subsequently
 #           use source debugging tools like delve.
-all: binary docs-in-container
+all: bin/skopeo docs
 
 help:
 	@echo "Usage: make <target>"
+	@echo
+	@echo "Defaults to building bin/skopeo and docs"
 	@echo
 	@echo " * 'install' - Install binaries and documents to system locations"
 	@echo " * 'binary' - Build skopeo with a container"
@@ -134,7 +136,7 @@ build-container:
 	${CONTAINER_RUNTIME} build ${BUILD_ARGS} -t "$(IMAGE)" .
 
 $(MANPAGES): %: %.md
-	@sed -e 's/\((skopeo.*\.md)\)//' -e 's/\[\(skopeo.*\)\]/\1/' $<  | $(GOMD2MAN) -in /dev/stdin -out $@
+	sed -e 's/\((skopeo.*\.md)\)//' -e 's/\[\(skopeo.*\)\]/\1/' $<  | $(GOMD2MAN) -in /dev/stdin -out $@
 
 docs: $(MANPAGES)
 
