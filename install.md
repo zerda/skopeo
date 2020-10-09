@@ -157,7 +157,7 @@ $ git clone https://github.com/containers/skopeo $GOPATH/src/github.com/containe
 $ cd $GOPATH/src/github.com/containers/skopeo && make bin/skopeo
 ```
 
-By default the `make` comman (make all) will build bin/skopeo and the documation locally.
+By default the `make` command (make all) will build bin/skopeo and the documentation locally.
 
 ### Building documentation
 
