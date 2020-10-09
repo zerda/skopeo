@@ -183,7 +183,7 @@ $ make docs
 
 Building in a container is simpler, but more restrictive:
 
-- It requires the `podman` command and the ability to run Linux containers
+- It requires the `podman` command and the ability to run Linux containers.
 - The created executable is a Linux executable, and depends on dynamic libraries
   which may only be available only in a container of a similar Linux
   distribution.
