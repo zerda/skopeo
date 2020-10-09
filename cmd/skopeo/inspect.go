@@ -90,7 +90,7 @@ func (opts *inspectOptions) run(args []string, stdout io.Writer) (retErr error) 
 
 	defer func() {
 		if err := src.Close(); err != nil {
-			retErr = errors.Wrapf(retErr, fmt.Sprintf("(could not close image: %v) ", err))
+			retErr = errors.Wrapf(retErr, "could not close image")
 		}
 	}()
 
@@ -104,14 +104,14 @@ func (opts *inspectOptions) run(args []string, stdout io.Writer) (retErr error) 
 	if opts.raw && !opts.config {
 		_, err := stdout.Write(rawManifest)
 		if err != nil {
-			return fmt.Errorf("Error writing manifest to standard output: %v", err)
+			return errors.Wrapf(err, "Error writing manifest to standard output")
 		}
 		return nil
 	}
 
 	img, err := image.FromUnparsedImage(ctx, sys, image.UnparsedInstance(src, nil))
 	if err != nil {
-		return fmt.Errorf("Error parsing manifest for image: %v", err)
+		return errors.Wrapf(err, "Error parsing manifest for image")
 	}
 
 	if opts.config && opts.raw {
@@ -124,7 +124,7 @@ func (opts *inspectOptions) run(args []string, stdout io.Writer) (retErr error) 
 		}
 		_, err = stdout.Write(configBlob)
 		if err != nil {
-			return fmt.Errorf("Error writing configuration blob to standard output: %v", err)
+			return errors.Wrapf(err, "Error writing configuration blob to standard output")
 		}
 		return nil
 	} else if opts.config {
@@ -137,7 +137,7 @@ func (opts *inspectOptions) run(args []string, stdout io.Writer) (retErr error) 
 		}
 		err = json.NewEncoder(stdout).Encode(config)
 		if err != nil {
-			return fmt.Errorf("Error writing OCI-formatted configuration data to standard output: %v", err)
+			return errors.Wrapf(err, "Error writing OCI-formatted configuration data to standard output")
 		}
 		return nil
 	}
@@ -164,7 +164,7 @@ func (opts *inspectOptions) run(args []string, stdout io.Writer) (retErr error) 
 	}
 	outputData.Digest, err = manifest.Digest(rawManifest)
 	if err != nil {
-		return fmt.Errorf("Error computing manifest digest: %v", err)
+		return errors.Wrapf(err, "Error computing manifest digest")
 	}
 	if dockerRef := img.Reference().DockerReference(); dockerRef != nil {
 		outputData.Name = dockerRef.Name()
@@ -182,7 +182,7 @@ func (opts *inspectOptions) run(args []string, stdout io.Writer) (retErr error) 
 			// In addition, AWS ECR rejects it with 403 (Forbidden) if the "ecr:ListImages"
 			// action is not allowed.
 			if !strings.Contains(err.Error(), "401") && !strings.Contains(err.Error(), "403") {
-				return fmt.Errorf("Error determining repository tags: %v", err)
+				return errors.Wrapf(err, "Error determining repository tags")
 			}
 			logrus.Warnf("Registry disallows tag list retrieval; skipping")
 		}
