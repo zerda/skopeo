@@ -157,18 +157,7 @@ $ git clone https://github.com/containers/skopeo $GOPATH/src/github.com/containe
 $ cd $GOPATH/src/github.com/containers/skopeo && make bin/skopeo
 ```
 
-### Building in a container
-
-Building in a container is simpler, but more restrictive:
-
-- It requires the `podman` command and the ability to run Linux containers
-- The created executable is a Linux executable, and depends on dynamic libraries
-  which may only be available only in a container of a similar Linux
-  distribution.
-
-```bash
-$ make binary # Or (make all) to also build documentation, see below.
-```
+By default the `make` command (make all) will build bin/skopeo and the documentation locally.
 
 ### Building documentation
 
@@ -188,6 +177,19 @@ Then
 
 ```bash
 $ make docs
+```
+
+### Building in a container
+
+Building in a container is simpler, but more restrictive:
+
+- It requires the `podman` command and the ability to run Linux containers.
+- The created executable is a Linux executable, and depends on dynamic libraries
+  which may only be available only in a container of a similar Linux
+  distribution.
+
+```bash
+$ make binary
 ```
 
 ### Installation
