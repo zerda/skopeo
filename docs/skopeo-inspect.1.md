@@ -1,7 +1,7 @@
 % skopeo-inspect(1)
 
 ## NAME
-skopeo\-inspect - Return low-level information about _image-name_ in a registry
+skopeo\-inspect - Return low-level information about _image-name_ in a registry.
 
 ## SYNOPSIS
 **skopeo inspect** [**--raw**] [**--config**] _image-name_

@@ -1,7 +1,7 @@
 % skopeo-delete(1)
 
 ## NAME
-skopeo\-delete - Mark _image-name_ for deletion.
+skopeo\-delete - Mark the _image-name_ for later deletion by the registry's garbage collector.
 
 ## SYNOPSIS
 **skopeo delete** _image-name_
