@@ -68,6 +68,11 @@ $ sudo apk add skopeo
 $ brew install skopeo
 ```
 
+### Nix / NixOS
+```sh
+$ nix-env -i skopeo
+```
+
 ### Debian ≥ 10 and Ubuntu ≥ 18.04
 Debian (10 and newer including Raspbian) and Ubuntu (18.04 and newer): Packages
 are available via the [Kubic][0] project repositories:
