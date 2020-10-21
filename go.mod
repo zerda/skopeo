@@ -3,7 +3,7 @@ module github.com/containers/skopeo
 go 1.12
 
 require (
-	github.com/containers/common v0.24.0
+	github.com/containers/common v0.26.0
 	github.com/containers/image/v5 v5.6.0
 	github.com/containers/ocicrypt v1.0.3
 	github.com/containers/storage v1.23.5
@@ -22,6 +22,5 @@ require (
 	github.com/stretchr/testify v1.6.1
 	github.com/syndtr/gocapability v0.0.0-20180916011248-d98352740cb2
 	go4.org v0.0.0-20190218023631-ce4c26f7be8e // indirect
-	golang.org/x/text v0.3.3 // indirect
 	gopkg.in/yaml.v2 v2.3.0
 )
