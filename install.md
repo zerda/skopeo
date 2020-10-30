@@ -7,6 +7,8 @@
 
 ```sh
 $ sudo dnf -y install skopeo
+```
+
 ### RHEL/CentOS ≥ 8 and CentOS Stream
 
 ```sh
