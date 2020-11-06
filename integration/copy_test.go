@@ -1114,10 +1114,12 @@ func (s *CopySuite) TestCopyVerifyingMirroredSignatures(c *check.C) {
 	// Create a signature for mirroring-primary:primary-signed without pushing there. This should be easier than using standalone-sign.
 	signingDir := filepath.Join(topDir, "signing-temp")
 	assertSkopeoSucceeds(c, "", "copy", "--src-tls-verify=false", regPrefix+"primary:unsigned", "dir:"+signingDir)
-	c.Logf("%s", combinedOutputOfCommand(c, "ls", "-laR", signingDir))
+	// Unknown error in Travis: https://github.com/containers/skopeo/issues/1093
+	//	c.Logf("%s", combinedOutputOfCommand(c, "ls", "-laR", signingDir))
 	assertSkopeoSucceeds(c, "^$", "standalone-sign", "-o", filepath.Join(signingDir, "signature-1"),
 		filepath.Join(signingDir, "manifest.json"), "localhost:5006/myns/mirroring-primary:primary-signed", "personal@example.com")
-	c.Logf("%s", combinedOutputOfCommand(c, "ls", "-laR", signingDir))
+	// Unknown error in Travis: https://github.com/containers/skopeo/issues/1093
+	//	c.Logf("%s", combinedOutputOfCommand(c, "ls", "-laR", signingDir))
 	assertSkopeoSucceeds(c, "", "--registries.d", registriesDir, "copy", "--dest-tls-verify=false", "dir:"+signingDir, regPrefix+"mirror:primary-signed")
 	// Verify that a correctly signed image for the primary is accessible using the primary's reference
 	assertSkopeoSucceeds(c, "", "--policy", policy, "--registries.d", registriesDir, "--registries-conf", "fixtures/registries.conf", "copy", "--src-tls-verify=false", regPrefix+"primary:primary-signed", dirDest)
