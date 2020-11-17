@@ -75,6 +75,7 @@ _skopeo_inspect() {
      --authfile
      --creds
      --cert-dir
+     --format
      --retry-times
      --registry-token
      "
