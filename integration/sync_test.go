@@ -117,6 +117,34 @@ func (s *SyncSuite) TestDocker2DirTagged(c *check.C) {
 	c.Assert(out, check.Equals, "")
 }
 
+func (s *SyncSuite) TestDocker2DirTaggedAll(c *check.C) {
+	tmpDir, err := ioutil.TempDir("", "skopeo-sync-test")
+	c.Assert(err, check.IsNil)
+	defer os.RemoveAll(tmpDir)
+
+	// FIXME: It would be nice to use one of the local Docker registries instead of neeeding an Internet connection.
+	image := "busybox:latest"
+	imageRef, err := docker.ParseReference(fmt.Sprintf("//%s", image))
+	c.Assert(err, check.IsNil)
+	imagePath := imageRef.DockerReference().String()
+
+	dir1 := path.Join(tmpDir, "dir1")
+	dir2 := path.Join(tmpDir, "dir2")
+
+	// sync docker => dir
+	assertSkopeoSucceeds(c, "", "sync", "--all", "--scoped", "--src", "docker", "--dest", "dir", image, dir1)
+	_, err = os.Stat(path.Join(dir1, imagePath, "manifest.json"))
+	c.Assert(err, check.IsNil)
+
+	// copy docker => dir
+	assertSkopeoSucceeds(c, "", "copy", "--all", "docker://"+image, "dir:"+dir2)
+	_, err = os.Stat(path.Join(dir2, "manifest.json"))
+	c.Assert(err, check.IsNil)
+
+	out := combinedOutputOfCommand(c, "diff", "-urN", path.Join(dir1, imagePath), dir2)
+	c.Assert(out, check.Equals, "")
+}
+
 func (s *SyncSuite) TestScoped(c *check.C) {
 	// FIXME: It would be nice to use one of the local Docker registries instead of needing an Internet connection.
 	image := "busybox:latest"
@@ -287,6 +315,37 @@ docker.io:
 	})
 	c.Assert(err, check.IsNil)
 	c.Assert(nManifests, check.Equals, nTags)
+}
+
+func (s *SyncSuite) TestYamlDigest2Dir(c *check.C) {
+	tmpDir, err := ioutil.TempDir("", "skopeo-sync-test")
+	c.Assert(err, check.IsNil)
+	defer os.RemoveAll(tmpDir)
+	dir1 := path.Join(tmpDir, "dir1")
+
+	yamlConfig := `
+docker.io:
+  images:
+    redis:
+    - sha256:61ce79d60150379787d7da677dcb89a7a047ced63406e29d6b2677b2b2163e92
+`
+	yamlFile := path.Join(tmpDir, "registries.yaml")
+	ioutil.WriteFile(yamlFile, []byte(yamlConfig), 0644)
+	assertSkopeoSucceeds(c, "", "sync", "--scoped", "--src", "yaml", "--dest", "dir", yamlFile, dir1)
+
+	nManifests := 0
+	err = filepath.Walk(dir1, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if !info.IsDir() && info.Name() == "manifest.json" {
+			nManifests++
+			return filepath.SkipDir
+		}
+		return nil
+	})
+	c.Assert(err, check.IsNil)
+	c.Assert(nManifests, check.Equals, 1)
 }
 
 func (s *SyncSuite) TestYaml2Dir(c *check.C) {

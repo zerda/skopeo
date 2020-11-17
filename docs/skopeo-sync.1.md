@@ -32,6 +32,11 @@ When the `--scoped` option is specified, images are prefixed with the source ima
 name can be stored at _destination_.
 
 ## OPTIONS
+**--all**
+If one of the images in __src__ refers to a list of images, instead of copying just the image which matches the current OS and
+architecture (subject to the use of the global --override-os, --override-arch and --override-variant options), attempt to copy all of
+the images in the list, and the list itself.
+
 **--authfile** _path_
 
 Path of the authentication file. Default is ${XDG\_RUNTIME\_DIR}/containers/auth.json, which is set using `skopeo login`.
@@ -147,6 +152,7 @@ registry.example.com:
         redis:
             - "1.0"
             - "2.0"
+            - "sha256:0000000000000000000000000000000011111111111111111111111111111111"
     images-by-tag-regex:
         nginx: ^1\.13\.[12]-alpine-perl$
     credentials:
@@ -166,7 +172,7 @@ skopeo sync --src yaml --dest docker sync.yml my-registry.local.lan/repo/
 ```
 This will copy the following images:
 - Repository `registry.example.com/busybox`: all images, as no tags are specified.
-- Repository `registry.example.com/redis`: images tagged "1.0" and "2.0".
+- Repository `registry.example.com/redis`: images tagged "1.0" and "2.0" along with image with digest "sha256:0000000000000000000000000000000011111111111111111111111111111111".
 - Repository `registry.example.com/nginx`: images tagged "1.13.1-alpine-perl" and "1.13.2-alpine-perl".
 - Repository `quay.io/coreos/etcd`: images tagged "latest".
 
