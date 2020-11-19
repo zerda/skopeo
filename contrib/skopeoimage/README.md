@@ -16,6 +16,13 @@ using the latest Fedora and then Skopeo is installed into them:
   * quay.io/skopeo/upstream - This image is built using the latest code found in this GitHub repository.  When someone creates a commit and pushes it, the image is created.  Due to that the image changes frequently and is not guaranteed to be stable.  Built with skopeoimage/upstream/Dockerfile.
   * quay.io/skopeo/testing - This image is built using the latest version of Skopeo that is or was in updates testing for Fedora.  At times this may be the same as the stable image.  This container image will primarily be used by the development teams for verification testing when a new package is created.  Built with skopeoimage/testing/Dockerfile.
 
+## Multiarch images
+
+Multiarch images are available for Skopeo upstream and stable versions. Supported architectures are `amd64`, `s390x`, `ppc64le`.
+Available images are `quay.io/skopeo/upstream:master`, `quay.io/skopeo/stable:v1.2.0`, `quay.io/containers/skopeo:v1.2.0`.
+
+Images can be used the same way as in a single architecture case, no extra setup is required. For samples see next chapter.
+
 ## Sample Usage
 
 Although not required, it is suggested that [Podman](https://github.com/containers/podman) be used with these container images.

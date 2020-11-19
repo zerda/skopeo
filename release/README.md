@@ -22,12 +22,13 @@ Several environment variables are used to customize image names and keep private
 
 **Image tags** are specified in environment variable and should be manually updated in case of new release.
 
-- `QUAY_USERNAME` and `QUAY_PASSWORD` are credentials to push image to corresponding quay.io repositories, should have write permissions. These variables should be specified in [Travis](https://docs.travis-ci.com/user/environment-variables/#defining-variables-in-repository-settings).
+- `SKOPEO_QUAY_USERNAME` and `SKOPEO_QUAY_PASSWORD` are credentials to push images to `quay.io/skopeo/stable` and `quay.io/skopeo/upstream` repos, and require the credentials to have write permissions. These variables should be specified in [Travis](https://docs.travis-ci.com/user/environment-variables/#defining-variables-in-repository-settings).
+- `CONTAINERS_QUAY_USERNAME` and `CONTAINERS_QUAY_PASSWORD` are credentials to push images to `quay.io/containers/skopeo` repos, and require the credentials to have write permissions. These variables should be specified in [Travis](https://docs.travis-ci.com/user/environment-variables/#defining-variables-in-repository-settings).
 
 Variables in .travis.yml
 - `MULTIARCH_MANIFEST_ARCHITECTURES` is a list with architecture shortnames, to apprear in final multiarch manifest. The values should fit to architectures used in the `image-build-push` Travis step.
-- `STABLE_IMAGE`, `EXTRA_STABLE_IMAGE` are image names to publish stable skopeo
-- `UPSTREAM_IMAGE` is image name to publish upstream skopeo
+- `STABLE_IMAGE`, `EXTRA_STABLE_IMAGE` are image names to publish stable Skopeo.
+- `UPSTREAM_IMAGE` is an image name to publish upstream Skopeo.
 
 ### Values for environment variables
 
@@ -36,4 +37,4 @@ Variables in .travis.yml
 | MULTIARCH_MANIFEST_ARCHITECTURES | "amd64 s390x ppc64le"            |
 | STABLE_IMAGE                     | quay.io/skopeo/stable:v1.2.0     |
 | EXTRA_STABLE_IMAGE               | quay.io/containers/skopeo:v1.2.0 |
-| UPSTREAM_IMAGE                   | quay.io/skopeo/upstream:master |
+| UPSTREAM_IMAGE                   | quay.io/skopeo/upstream:master   |
