@@ -18,10 +18,10 @@ using the latest Fedora and then Skopeo is installed into them:
 
 ## Multiarch images
 
-Multiarch images are available for skopeo upstream and stable versions. Supported architectures are `amd64`, `s390x`, `ppc64le`.
+Multiarch images are available for Skopeo upstream and stable versions. Supported architectures are `amd64`, `s390x`, `ppc64le`.
 Available images are `quay.io/skopeo/upstream:master`, `quay.io/skopeo/stable:v1.2.0`, `quay.io/containers/skopeo:v1.2.0`.
 
-Images can be used the same way as in single architecture case, no extra setup is required. For samples see next chapter.
+Images can be used the same way as in a single architecture case, no extra setup is required. For samples see next chapter.
 
 ## Sample Usage
 
