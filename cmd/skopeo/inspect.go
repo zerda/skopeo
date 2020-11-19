@@ -4,8 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"os"
 	"strings"
+	"text/tabwriter"
+	"text/template"
 
+	"github.com/containers/common/pkg/report"
 	"github.com/containers/common/pkg/retry"
 	"github.com/containers/image/v5/docker"
 	"github.com/containers/image/v5/image"
@@ -23,6 +27,7 @@ type inspectOptions struct {
 	global    *globalOptions
 	image     *imageOptions
 	retryOpts *retry.RetryOptions
+	format    string
 	raw       bool // Output the raw manifest instead of parsing information about the image
 	config    bool // Output the raw config blob instead of parsing information about the image
 }
@@ -45,13 +50,16 @@ Supported transports:
 
 See skopeo(1) section "IMAGE NAMES" for the expected format
 `, strings.Join(transports.ListNames(), ", ")),
-		RunE:    commandAction(opts.run),
-		Example: `skopeo inspect docker://docker.io/fedora`,
+		RunE: commandAction(opts.run),
+		Example: `skopeo inspect docker://registry.fedoraproject.org/fedora
+  skopeo inspect --config docker://docker.io/alpine
+  skopeo inspect  --format "Name: {{.Name}} Digest: {{.Digest}}" docker://registry.access.redhat.com/ubi8`,
 	}
 	adjustUsage(cmd)
 	flags := cmd.Flags()
 	flags.BoolVar(&opts.raw, "raw", false, "output raw manifest or configuration")
 	flags.BoolVar(&opts.config, "config", false, "output configuration")
+	flags.StringVarP(&opts.format, "format", "f", "", "Format the output to a Go template")
 	flags.AddFlagSet(&sharedFlags)
 	flags.AddFlagSet(&imageFlags)
 	flags.AddFlagSet(&retryFlags)
@@ -63,12 +71,16 @@ func (opts *inspectOptions) run(args []string, stdout io.Writer) (retErr error) 
 		rawManifest []byte
 		src         types.ImageSource
 		imgInspect  *types.ImageInspectInfo
+		data        []interface{}
 	)
 	ctx, cancel := opts.global.commandTimeoutContext()
 	defer cancel()
 
 	if len(args) != 1 {
 		return errors.New("Exactly one argument expected")
+	}
+	if opts.raw && opts.format != "" {
+		return errors.New("raw output does not support format option")
 	}
 	imageName := args[0]
 
@@ -106,12 +118,13 @@ func (opts *inspectOptions) run(args []string, stdout io.Writer) (retErr error) 
 		if err != nil {
 			return fmt.Errorf("Error writing manifest to standard output: %v", err)
 		}
+
 		return nil
 	}
 
 	img, err := image.FromUnparsedImage(ctx, sys, image.UnparsedInstance(src, nil))
 	if err != nil {
-		return fmt.Errorf("Error parsing manifest for image: %v", err)
+		return errors.Wrapf(err, "Error parsing manifest for image")
 	}
 
 	if opts.config && opts.raw {
@@ -124,7 +137,7 @@ func (opts *inspectOptions) run(args []string, stdout io.Writer) (retErr error) 
 		}
 		_, err = stdout.Write(configBlob)
 		if err != nil {
-			return fmt.Errorf("Error writing configuration blob to standard output: %v", err)
+			return errors.Wrapf(err, "Error writing configuration blob to standard output")
 		}
 		return nil
 	} else if opts.config {
@@ -135,9 +148,19 @@ func (opts *inspectOptions) run(args []string, stdout io.Writer) (retErr error) 
 		}, opts.retryOpts); err != nil {
 			return errors.Wrapf(err, "Error reading OCI-formatted configuration data")
 		}
-		err = json.NewEncoder(stdout).Encode(config)
+		if report.IsJSON(opts.format) || opts.format == "" {
+			var out []byte
+			out, err = json.MarshalIndent(config, "", "    ")
+			if err == nil {
+				fmt.Fprintf(stdout, "%s\n", string(out))
+			}
+		} else {
+			row := "{{range . }}" + report.NormalizeFormat(opts.format) + "{{end}}"
+			data = append(data, config)
+			err = printTmpl(row, data)
+		}
 		if err != nil {
-			return fmt.Errorf("Error writing OCI-formatted configuration data to standard output: %v", err)
+			return errors.Wrapf(err, "Error writing OCI-formatted configuration data to standard output")
 		}
 		return nil
 	}
@@ -164,7 +187,7 @@ func (opts *inspectOptions) run(args []string, stdout io.Writer) (retErr error) 
 	}
 	outputData.Digest, err = manifest.Digest(rawManifest)
 	if err != nil {
-		return fmt.Errorf("Error computing manifest digest: %v", err)
+		return errors.Wrapf(err, "Error computing manifest digest")
 	}
 	if dockerRef := img.Reference().DockerReference(); dockerRef != nil {
 		outputData.Name = dockerRef.Name()
@@ -182,15 +205,35 @@ func (opts *inspectOptions) run(args []string, stdout io.Writer) (retErr error) 
 			// In addition, AWS ECR rejects it with 403 (Forbidden) if the "ecr:ListImages"
 			// action is not allowed.
 			if !strings.Contains(err.Error(), "401") && !strings.Contains(err.Error(), "403") {
-				return fmt.Errorf("Error determining repository tags: %v", err)
+				return errors.Wrapf(err, "Error determining repository tags")
 			}
 			logrus.Warnf("Registry disallows tag list retrieval; skipping")
 		}
 	}
-	out, err := json.MarshalIndent(outputData, "", "    ")
+	if report.IsJSON(opts.format) || opts.format == "" {
+		out, err := json.MarshalIndent(outputData, "", "    ")
+		if err == nil {
+			fmt.Fprintf(stdout, "%s\n", string(out))
+		}
+		return err
+	}
+	row := "{{range . }}" + report.NormalizeFormat(opts.format) + "{{end}}"
+	data = append(data, outputData)
+	return printTmpl(row, data)
+}
+
+func inspectNormalize(row string) string {
+	r := strings.NewReplacer(
+		".ImageID", ".Image",
+	)
+	return r.Replace(row)
+}
+
+func printTmpl(row string, data []interface{}) error {
+	t, err := template.New("skopeo inspect").Parse(row)
 	if err != nil {
 		return err
 	}
-	fmt.Fprintf(stdout, "%s\n", string(out))
-	return nil
+	w := tabwriter.NewWriter(os.Stdout, 8, 2, 2, ' ', 0)
+	return t.Execute(w, data)
 }
