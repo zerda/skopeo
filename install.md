@@ -75,47 +75,82 @@ brew install skopeo
 $ nix-env -i skopeo
 ```
 
-### Debian ≥ 10 and Ubuntu ≥ 18.04
-Debian (10 and newer including Raspbian) and Ubuntu (18.04 and newer): Packages
-are available via the [Kubic][0] project repositories:
+### Debian
 
-[0]: https://build.opensuse.org/project/show/devel:kubic:libcontainers:stable
+The skopeo package is available in the [Bullseye (testing)
+branch](https://packages.debian.org/bullseye/podman), which will be the
+next stable release (Debian 11) as well as the Debian Unstable/Sid.
 
 ```bash
-# Debian Unstable/Sid:
-echo 'deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/Debian_Unstable/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list
-curl -L https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/Debian_Unstable/Release.key | sudo apt-key add -
+# Debian Testing/Bullseye or Unstable/Sid
+sudo apt-get update
+sudo apt-get -y install skopeo
 ```
 
-```bash
-# Debian Testing:
-echo 'deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/Debian_Testing/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list
-curl -L https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/Debian_Testing/Release.key | sudo apt-key add -
-```
+The [Kubic project](https://build.opensuse.org/project/show/devel:kubic:libcontainers:stable)
+provides packages for Debian 10. The Kubic packages for Debian Testing/Bullseye and Debian Unstable/Sid
+have been discontinued to avoid
+[conflicts](https://github.com/containers/buildah/issues/2797) with the official packages.
+
+Caution: If you upgrade from Debian 10 to Testing/Bullseye or
+Unstable/Sid you would likely end up downgrading Skopeo because the version in
+OBS is more frequently updated than the one in Debian's official repositories,
+due to how Debian works.
 
 ```bash
-# Debian 10:
+# Debian 10
 echo 'deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/Debian_10/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list
 curl -L https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/Debian_10/Release.key | sudo apt-key add -
-```
-
-```bash
-# Raspbian 10:
-echo 'deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/Raspbian_10/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list
-curl -L https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/Raspbian_10/Release.key | sudo apt-key add -
-```
-
-```bash
-# Ubuntu (18.04, 19.04, 19.10 and 20.04):
-. /etc/os-release
-sudo sh -c "echo 'deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/x${NAME}_${VERSION_ID}/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list"
-curl -L https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/x${NAME}_${VERSION_ID}/Release.key | sudo apt-key add -
-```
-
-```bash
 sudo apt-get -y update
 sudo apt-get -y install skopeo
 ```
+
+### Raspberry Pi OS armhf (ex Raspbian)
+
+The Kubic project provides packages for Raspbian 10.
+
+```bash
+# Raspbian 10
+echo 'deb https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/Raspbian_10/ /' | sudo tee /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list
+curl -L https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/Raspbian_10/Release.key | sudo apt-key add -
+sudo apt-get update -qq
+sudo apt-get -qq -y install skopeo
+```
+
+
+### Raspberry Pi OS arm64 (beta)
+
+Raspberry Pi OS uses the standard Debian's repositories,
+so it is fully compatible with Debian's arm64 repository.
+You can simply follow the [steps for Debian](#debian) to install podman.
+
+
+### Ubuntu
+
+The skopeo package is available in the official repositories for Ubuntu 20.10
+and newer.
+
+```bash
+# Ubuntu 20.10 and newer
+sudo apt-get -y update
+sudo apt-get -y install skopeo
+```
+
+The Kubic project provides packages for some older Ubuntu versions
+Checkout the [Kubic project page](https://build.opensuse.org/package/show/devel:kubic:libcontainers:stable/skopeo)
+for a list of supported Ubuntu version and
+architecture combinations. **NOTE:** The command `sudo apt-get -y upgrade`
+maybe required in some cases if Skopeo cannot be installed without it.
+
+```bash
+. /etc/os-release
+echo "deb https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_${VERSION_ID}/ /" | sudo tee /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list
+curl -L https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_${VERSION_ID}/Release.key | sudo apt-key add -
+sudo apt-get update
+sudo apt-get -y upgrade
+sudo apt-get -y install skopeo
+```
+
 
 Otherwise, read on for building and installing it from source:
 
