@@ -57,6 +57,7 @@ jobs:
       <<: *local-build
       name: local build for osx
       os: osx
+      osx_image: xcode11.3
       install:
         # Ideally, the (brew update) should not be necessary and Travis would have fairly
         # frequently updated OS images; that's not been the case historically.
@@ -64,7 +65,6 @@ jobs:
         # since the last OS image build (as of July 2020), but the Travis OS still
         # contains it, and it prevents updating of Python 3.
       - brew update && brew unlink python@2 && brew install gpgme
-      - sudo rm -rf /Library/Developer/CommandLineTools && sudo xcode-select --install
       script:
       - hack/travis_osx.sh
     - stage: local-build
