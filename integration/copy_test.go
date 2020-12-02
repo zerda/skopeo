@@ -1083,9 +1083,10 @@ func copyWithSignedIdentity(c *check.C, src, dest, signedIdentity, signBy, regis
 		filepath.Join(signingDir, "manifest.json"), signedIdentity, signBy)
 	// Unknown error in Travis: https://github.com/containers/skopeo/issues/1093
 	//	c.Logf("%s", combinedOutputOfCommand(c, "ls", "-laR", signingDir))
-	assertSkopeoSucceeds(c, "", "--registries.d", registriesDir, "copy", "--dest-tls-verify=false", "dir:"+signingDir, destDir)
+	assertSkopeoSucceeds(c, "", "--registries.d", registriesDir, "copy", "--dest-tls-verify=false", "dir:"+signingDir, dest)
 }
 
+// Both mirroring support in registries.conf, and mirrored remapIdentity support in policy.json
 func (s *CopySuite) TestCopyVerifyingMirroredSignatures(c *check.C) {
 	const regPrefix = "docker://localhost:5006/myns/mirroring-"
 
@@ -1141,6 +1142,20 @@ func (s *CopySuite) TestCopyVerifyingMirroredSignatures(c *check.C) {
 	// … verify it is NOT accessible when requiring a signature.
 	assertSkopeoFails(c, ".*Source image rejected: None of the signatures were accepted, reasons: Signature for identity localhost:5006/myns/mirroring-primary:direct is not accepted; Signature for identity localhost:5006/myns/mirroring-mirror:mirror-signed is not accepted; Signature for identity localhost:5006/myns/mirroring-primary:primary-signed is not accepted.*",
 		"--policy", policy, "--registries.d", registriesDir, "--registries-conf", "fixtures/registries.conf", "copy", "--src-tls-verify=false", regPrefix+"mirror:primary-signed", dirDest)
+
+	assertSkopeoSucceeds(c, "", "--registries.d", registriesDir, "--registries-conf", "fixtures/registries.conf", "copy", "--src-tls-verify=false", "--dest-tls-verify=false", regPrefix+"primary:unsigned", regPrefix+"remap:remapped")
+	// Verify that while a remapIdentity image is accessible using the remapped (mirror) location
+	assertSkopeoSucceeds(c, "" /* no --policy */, "--registries.d", registriesDir, "--registries-conf", "fixtures/registries.conf", "copy", "--src-tls-verify=false", regPrefix+"remap:remapped", dirDest)
+	// … it is NOT accessible when requiring a signature …
+	assertSkopeoFails(c, ".*Source image rejected: None of the signatures were accepted, reasons: Signature for identity localhost:5006/myns/mirroring-primary:direct is not accepted; Signature for identity localhost:5006/myns/mirroring-mirror:mirror-signed is not accepted; Signature for identity localhost:5006/myns/mirroring-primary:primary-signed is not accepted.*", "--policy", policy, "--registries.d", registriesDir, "--registries-conf", "fixtures/registries.conf", "copy", "--src-tls-verify=false", regPrefix+"remap:remapped", dirDest)
+	// … until signed.
+	copyWithSignedIdentity(c, regPrefix+"remap:remapped", regPrefix+"remap:remapped",
+		"localhost:5006/myns/mirroring-primary:remapped", "personal@example.com",
+		registriesDir)
+	assertSkopeoSucceeds(c, "", "--policy", policy, "--registries.d", registriesDir, "--registries-conf", "fixtures/registries.conf", "copy", "--src-tls-verify=false", regPrefix+"remap:remapped", dirDest)
+	// To be extra clear about the semantics, verify that the signedPrefix (primary) location never exists
+	// and only the remapped prefix (mirror) is accessed.
+	assertSkopeoFails(c, ".*Error initializing source docker://localhost:5006/myns/mirroring-primary:remapped:.*manifest unknown: manifest unknown.*", "--policy", policy, "--registries.d", registriesDir, "--registries-conf", "fixtures/registries.conf", "copy", "--src-tls-verify=false", regPrefix+"primary:remapped", dirDest)
 }
 
 func (s *SkopeoSuite) TestCopySrcWithAuth(c *check.C) {
