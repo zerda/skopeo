@@ -280,8 +280,9 @@ func imagesToCopyFromRegistry(registryName string, cfg registrySyncConfig, sourc
 	serverCtx.DockerDaemonCertPath = cfg.CertDir
 	serverCtx.DockerDaemonInsecureSkipTLSVerify = (cfg.TLSVerify.skip == types.OptionalBoolTrue)
 	serverCtx.DockerInsecureSkipTLSVerify = cfg.TLSVerify.skip
-	serverCtx.DockerAuthConfig = &cfg.Credentials
-
+	if cfg.Credentials != (types.DockerAuthConfig{}) {
+		serverCtx.DockerAuthConfig = &cfg.Credentials
+	}
 	var repoDescList []repoDescriptor
 	for imageName, refs := range cfg.Images {
 		repoLogger := logrus.WithFields(logrus.Fields{
