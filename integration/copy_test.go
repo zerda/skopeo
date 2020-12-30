@@ -464,16 +464,16 @@ func (s *CopySuite) TestCopyWithManifestListStorageDigestMultipleArchesTagAndDig
 	c.Assert(image5.Architecture, check.Equals, "arm64")
 }
 
-func (s *CopySuite) TestCopyFailsWhenImageOSDoesntMatchRuntimeOS(c *check.C) {
-	storage, err := ioutil.TempDir("", "copy-fails-image-doesnt-match-runtime")
+func (s *CopySuite) TestCopyFailsWhenImageOSDoesNotMatchRuntimeOS(c *check.C) {
+	storage, err := ioutil.TempDir("", "copy-fails-image-does-not-match-runtime")
 	c.Assert(err, check.IsNil)
 	defer os.RemoveAll(storage)
 	storage = fmt.Sprintf("[vfs@%s/root+%s/runroot]", storage, storage)
 	assertSkopeoFails(c, `.*no image found in manifest list for architecture .*, variant .*, OS .*`, "copy", knownWindowsOnlyImage, "containers-storage:"+storage+"test")
 }
 
-func (s *CopySuite) TestCopySucceedsWhenImageDoesntMatchRuntimeButWeOverride(c *check.C) {
-	storage, err := ioutil.TempDir("", "copy-succeeds-image-doesnt-match-runtime-but-override")
+func (s *CopySuite) TestCopySucceedsWhenImageDoesNotMatchRuntimeButWeOverride(c *check.C) {
+	storage, err := ioutil.TempDir("", "copy-succeeds-image-does-not-match-runtime-but-override")
 	c.Assert(err, check.IsNil)
 	defer os.RemoveAll(storage)
 	storage = fmt.Sprintf("[vfs@%s/root+%s/runroot]", storage, storage)
@@ -863,7 +863,7 @@ func (s *CopySuite) TestCopyDirSignatures(c *check.C) {
 	assertSkopeoSucceeds(c, "", "copy", "docker://estesp/busybox:armfh", topDirDest+"/dir1")
 	assertSkopeoSucceeds(c, "", "copy", "docker://estesp/busybox:s390x", topDirDest+"/dir2")
 
-	// Sign the images. By coping fom a topDirDest/dirN, also test that non-/restricted paths
+	// Sign the images. By coping from a topDirDest/dirN, also test that non-/restricted paths
 	// use the dir:"" default of insecureAcceptAnything.
 	// (For signing, we must push to atomic: to get a Docker identity to use in the signature.)
 	assertSkopeoSucceeds(c, "", "--tls-verify=false", "--policy", policy, "copy", "--sign-by", "personal@example.com", topDirDest+"/dir1", "atomic:localhost:5000/myns/personal:dirstaging")
@@ -1147,7 +1147,7 @@ func (s *SkopeoSuite) TestCopySrcAndDestWithAuth(c *check.C) {
 	assertSkopeoSucceeds(c, "", "--tls-verify=false", "copy", "--src-creds=testuser:testpassword", "--dest-creds=testuser:testpassword", fmt.Sprintf("docker://%s/busybox:latest", s.regV2WithAuth.url), fmt.Sprintf("docker://%s/test:auth", s.regV2WithAuth.url))
 }
 
-func (s *CopySuite) TestCopyNoPanicOnHTTPResponseWOTLSVerifyFalse(c *check.C) {
+func (s *CopySuite) TestCopyNoPanicOnHTTPResponseWithoutTLSVerifyFalse(c *check.C) {
 	const ourRegistry = "docker://" + v2DockerRegistryURL + "/"
 
 	// dir:test isn't created beforehand just because we already know this could

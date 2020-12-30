@@ -122,7 +122,7 @@ func (s *SyncSuite) TestDocker2DirTaggedAll(c *check.C) {
 	c.Assert(err, check.IsNil)
 	defer os.RemoveAll(tmpDir)
 
-	// FIXME: It would be nice to use one of the local Docker registries instead of neeeding an Internet connection.
+	// FIXME: It would be nice to use one of the local Docker registries instead of needing an Internet connection.
 	image := "busybox:latest"
 	imageRef, err := docker.ParseReference(fmt.Sprintf("//%s", image))
 	c.Assert(err, check.IsNil)
@@ -578,7 +578,7 @@ func (s *SyncSuite) TestFailsWithDockerSourceUnauthorized(c *check.C) {
 }
 
 func (s *SyncSuite) TestFailsWithDockerSourceNotExisting(c *check.C) {
-	repo := path.Join(v2DockerRegistryURL, "imagedoesdotexist")
+	repo := path.Join(v2DockerRegistryURL, "imagedoesnotexist")
 	tmpDir, err := ioutil.TempDir("", "skopeo-sync-test")
 	c.Assert(err, check.IsNil)
 	defer os.RemoveAll(tmpDir)
