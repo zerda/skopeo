@@ -1,9 +1,9 @@
 .PHONY: all binary build-container docs docs-in-container build-local clean install install-binary install-completions shell test-integration .install.vndr vendor vendor-in-container
 
 export GOPROXY=https://proxy.golang.org
+PREFIX ?= /usr/local
 
 ifeq ($(shell uname),Darwin)
-PREFIX ?= ${DESTDIR}/usr/local
 DARWIN_BUILD_TAG=
 # On macOS, (brew install gpgme) installs it within /usr/local, but /usr/local/include is not in the default search path.
 # Rather than hard-code this directory, use gpgme-config. Sadly that must be done at the top-level user
@@ -12,16 +12,14 @@ DARWIN_BUILD_TAG=
 # If gpgme is not installed or gpgme-config can’t be found for other reasons, the error is silently ignored
 # (and the user will probably find out because the cgo compilation will fail).
 GPGME_ENV := CGO_CFLAGS="$(shell gpgme-config --cflags 2>/dev/null)" CGO_LDFLAGS="$(shell gpgme-config --libs 2>/dev/null)"
-else
-PREFIX ?= ${DESTDIR}/usr
 endif
 
-INSTALLDIR=${PREFIX}/bin
-MANINSTALLDIR=${PREFIX}/share/man
-CONTAINERSSYSCONFIGDIR=${DESTDIR}/etc/containers
-REGISTRIESDDIR=${CONTAINERSSYSCONFIGDIR}/registries.d
-SIGSTOREDIR=${DESTDIR}/var/lib/containers/sigstore
-BASHINSTALLDIR=${PREFIX}/share/bash-completion/completions
+CONTAINERSCONFDIR=/etc/containers
+REGISTRIESDDIR=${CONTAINERSCONFDIR}/registries.d
+SIGSTOREDIR=/var/lib/containers/sigstore
+BINDIR=${PREFIX}/bin
+MANDIR=${PREFIX}/share/man
+BASHCOMPLETIONSDIR=${PREFIX}/share/bash-completion/completions
 
 GO ?= go
 GOBIN := $(shell $(GO) env GOBIN)
@@ -149,23 +147,23 @@ clean:
 	rm -rf bin docs/*.1
 
 install: install-binary install-docs install-completions
-	install -d -m 755 ${SIGSTOREDIR}
-	install -d -m 755 ${CONTAINERSSYSCONFIGDIR}
-	install -m 644 default-policy.json ${CONTAINERSSYSCONFIGDIR}/policy.json
-	install -d -m 755 ${REGISTRIESDDIR}
-	install -m 644 default.yaml ${REGISTRIESDDIR}/default.yaml
+	install -d -m 755 ${DESTDIR}/${SIGSTOREDIR}
+	install -d -m 755 ${DESTDIR}/${CONTAINERSCONFIGDIR}
+	install -m 644 default-policy.json ${DESTDIR}/${CONTAINERSCONFIGDIR}/policy.json
+	install -d -m 755 ${DESTDIR}/${REGISTRIESDDIR}
+	install -m 644 default.yaml ${DESTDIR}/${REGISTRIESDDIR}/default.yaml
 
 install-binary: bin/skopeo
-	install -d -m 755 ${INSTALLDIR}
-	install -m 755 bin/skopeo ${INSTALLDIR}/skopeo
+	install -d -m 755 ${DESTDIR}/${BINDIR}
+	install -m 755 bin/skopeo ${DESTDIR}/${BINDIR}/skopeo
 
 install-docs: docs
-	install -d -m 755 ${MANINSTALLDIR}/man1
-	install -m 644 docs/*.1 ${MANINSTALLDIR}/man1/
+	install -d -m 755 ${DESTDIR}/${MANDIR}/man1
+	install -m 644 docs/*.1 ${DESTDIR}/${MANDIR}/man1
 
 install-completions:
-	install -m 755 -d ${BASHINSTALLDIR}
-	install -m 644 completions/bash/skopeo ${BASHINSTALLDIR}/skopeo
+	install -m 755 -d ${DESTDIR}/${BASHCOMPLETIONSDIR}
+	install -m 644 completions/bash/skopeo ${DESTDIR}/${BASHCOMPLETIONSDIR}/skopeo
 
 shell: build-container
 	$(CONTAINER_RUN) bash
