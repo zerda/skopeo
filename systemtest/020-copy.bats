@@ -45,7 +45,7 @@ function setup() {
 }
 
 # Compression zstd
-@test "copy: oci, round trip, zstd" {
+@test "copy: oci, zstd" {
     local remote_image=docker://quay.io/libpod/busybox:latest
 
     local dir=$TESTDIR/dir
@@ -57,6 +57,12 @@ function setup() {
 
     # Check there is at least one file that has the zstd magic number as the first 4 bytes
     (for i in $dir/blobs/sha256/*; do test "$(head -c 4 $i)" = $magic && exit 0; done; exit 1)
+
+    # Check that the manifest's description of the image's first layer is the zstd layer type
+    instance=$(jq -r '.manifests[0].digest' $dir/index.json)
+    [[ "$instance" != null ]]
+    mediatype=$(jq -r '.layers[0].mediaType' < $dir/blobs/${instance/://})
+    [[ "$mediatype" == "application/vnd.oci.image.layer.v1.tar+zstd" ]]
 }
 
 # Same image, extracted once with :tag and once without
