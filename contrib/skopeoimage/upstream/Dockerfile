@@ -48,7 +48,7 @@ RUN echo skopeo:100000:65536 > /etc/subuid
 RUN echo skopeo:100000:65536 > /etc/subgid
 
 # Point to the Authorization file
-ENV REGISTRY_AUTH_FILE=/auth.json
+ENV REGISTRY_AUTH_FILE=/tmp/auth.json
 
 # Set the entrypoint
 ENTRYPOINT ["/usr/bin/skopeo"]
