@@ -67,14 +67,6 @@ jobs:
       - brew update && brew unlink python@2 && brew install gpgme
       script:
       - hack/travis_osx.sh
-    - stage: local-build
-      <<: *local-build
-      name: local build for linux
-      os: linux
-      services:
-      - docker
-      script: 
-      - make vendor && ./hack/tree_status.sh && make local-cross && make check
 
     # Run 3 image-build-push tasks in parallel for linux/amd64, linux/s390x and linux/ppc64le platforms (for upstream and stable)
     - stage: image-build-push

@@ -44,7 +44,11 @@ elif [[ "$1" == "--setup" ]]; then
     # get_ci_vm container entrypoint calls us with this option on the
     # Cirrus-CI environment instance, to perform repo.-specific setup.
     cd $REPO_DIRPATH
-    echo "+ No further setup performed" > /dev/stderr
+    echo "+ Growing root filesystem" > /dev/stderr
+    growpart /dev/sda 1
+    resize2fs /dev/sda1
+    echo "+ Erasing pre-installed skopeo package" > /dev/stderr
+    dnf erase -y skopeo
 else
     # Create and access VM for specified Cirrus-CI task
     mkdir -p $HOME/.config/gcloud/ssh
