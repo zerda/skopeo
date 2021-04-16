@@ -12,9 +12,13 @@ env:
     GOBIN: "${GOPATH}/bin"
     GOCACHE: "${GOPATH}/cache"
     GOSRC: &gosrc "/var/tmp/go/src/github.com/containers/skopeo"
+    # Required for consistency with containers/image CI
+    SKOPEO_PATH: *gosrc
     CIRRUS_WORKING_DIR: *gosrc
     # The default is 'sh' if unspecified
     CIRRUS_SHELL: "/bin/bash"
+    # Save a little typing (path relative to $CIRRUS_WORKING_DIR)
+    SCRIPT_BASE: "./contrib/cirrus"
 
     ####
     #### Cache-image names to test with (double-quotes around names are critical)
@@ -60,17 +64,26 @@ validate_task:
     script: make validate-local
 
 
-vendor_task:
-    only_if: $CIRRUS_PR != ''
-    container: *build_container
-    script: make vendor && ./hack/tree_status.sh
+cross_task:
+    # TODO: hack/travis_osx.sh doesn't work under cirrus-ci
+    #       for some unknown reason.  Remove the next line when
+    #       fixed (remember to remove from .travis.yml also).
+    allow_failures: $CI == $CI
+    macos_instance:
+        image: catalina-xcode-11.3.1
+    brew_script: brew install gpgme go go-md2man
+    test_script: hack/travis_osx.sh
 
 
-test_task:
-    alias: test
+#####
+##### NOTE: This task is subtantially duplicated in the containers/image
+##### repository's `.cirrus.yml`.  Changes made here should be fully merged
+##### prior to being manually duplicated and maintained in containers/image.
+#####
+test_skopeo_task:
+    alias: test_skopeo
     depends_on:
         - validate
-        - vendor
     gce_instance:
         image_project: libpod-218412
         zone: "us-central1-f"
@@ -87,35 +100,20 @@ test_task:
         - name: "Skopeo Test w/ opengpg"
           env:
               BUILDTAGS: 'btrfs_noversion libdm_no_deferred_remove containers_image_openpgp'
-    env:
-        # TODO: Remove test technical-debt requiring integration tests to run
-        #       inside a container and with --privileged.  This is hiding bugs!
-        PODMANMAKE: >-
-            podman run -it --rm --privileged
-                -e GOPATH=$GOPATH
-                -v $GOPATH:$GOPATH:Z
-                -w $GOSRC
-                $SKOPEO_CI_CONTAINER_FQIN
-                    make
-    setup_script: |
-        # This is required as part of the standard Fedora VM setup
-        growpart /dev/sda 1
-        resize2fs /dev/sda1
-
-        # VM's come with the distro. skopeo pre-installed
-        dnf erase -y skopeo
-
-        # Ensure we start with a clean-slate
-        podman system reset --force
-    # Note: We _HAVE_ to spam BUILDTAGS in this way due to how Cirrus-CI
-    # mangles quoted strings when performing in-line 'env' substitution.
-    main_script: |
-        set -x
-        $PODMANMAKE bin/skopeo BUILDTAGS="$BUILDTAGS"
-        $PODMANMAKE test-unit-local BUILDTAGS="$BUILDTAGS"
-        $PODMANMAKE test-integration-local BUILDTAGS="$BUILDTAGS"
-        # Do not run inside podman, uses containers internally.
-        make test-system-local BUILDTAGS="$BUILDTAGS"
+    setup_script: >-
+        "${GOSRC}/${SCRIPT_BASE}/runner.sh" setup
+    vendor_script: >-
+        "${SKOPEO_PATH}/${SCRIPT_BASE}/runner.sh" vendor
+    build_script: >-
+        "${SKOPEO_PATH}/${SCRIPT_BASE}/runner.sh" build
+    validate_script: >-
+        "${SKOPEO_PATH}/${SCRIPT_BASE}/runner.sh" validate
+    unit_script: >-
+        "${SKOPEO_PATH}/${SCRIPT_BASE}/runner.sh" unit
+    integration_script: >-
+        "${SKOPEO_PATH}/${SCRIPT_BASE}/runner.sh" integration
+    system_script: >
+        "${SKOPEO_PATH}/${SCRIPT_BASE}/runner.sh" system
 
 
 # This task is critical.  It updates the "last-used by" timestamp stored
@@ -153,8 +151,8 @@ success_task:
     # N/B: ALL tasks must be listed here, minus their '_task' suffix.
     depends_on:
         - validate
-        - vendor
-        - test
+        - cross
+        - test_skopeo
         - meta
     container: *smallcontainer
     env:
