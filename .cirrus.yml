@@ -65,14 +65,19 @@ validate_task:
 
 
 cross_task:
-    # TODO: hack/travis_osx.sh doesn't work under cirrus-ci
-    #       for some unknown reason.  Remove the next line when
-    #       fixed (remember to remove from .travis.yml also).
-    allow_failures: $CI == $CI
     macos_instance:
-        image: catalina-xcode-11.3.1
-    brew_script: brew install gpgme go go-md2man
-    test_script: hack/travis_osx.sh
+        image: catalina-xcode
+    setup_script: |
+        export PATH=$GOPATH/bin:$PATH
+        brew install gpgme go go-md2man
+        go get -u golang.org/x/lint/golint
+    test_script: |
+        export PATH=$GOPATH/bin:$PATH
+        go version
+        go env
+        make validate-local test-unit-local bin/skopeo
+        sudo make install
+        /usr/local/bin/skopeo -v
 
 
 #####
