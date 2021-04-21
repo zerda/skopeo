@@ -46,7 +46,7 @@ type repoDescriptor struct {
 	Context     *types.SystemContext   // SystemContext for the sync command
 }
 
-// tlsVerify is an implementation of the Unmarshaler interface, used to
+// tlsVerifyConfig is an implementation of the Unmarshaler interface, used to
 // customize the unmarshaling behaviour of the tls-verify YAML key.
 type tlsVerifyConfig struct {
 	skip types.OptionalBool // skip TLS verification check (false by default)
@@ -106,7 +106,7 @@ See skopeo-sync(1) for details.
 	return cmd
 }
 
-// unmarshalYAML is the implementation of the Unmarshaler interface method
+// UnmarshalYAML is the implementation of the Unmarshaler interface method
 // method for the tlsVerifyConfig type.
 // It unmarshals the 'tls-verify' YAML key so that, when they key is not
 // specified, tls verification is enforced.
@@ -238,7 +238,7 @@ func imagesToCopyFromRepo(sys *types.SystemContext, repoRef reference.Named) ([]
 	return sourceReferences, nil
 }
 
-// imagesTopCopyFromDir builds a list of image references from the images found
+// imagesToCopyFromDir builds a list of image references from the images found
 // in the source directory.
 // It returns an image reference slice with as many elements as the images found
 // and any error encountered.
@@ -268,7 +268,7 @@ func imagesToCopyFromDir(dirPath string) ([]types.ImageReference, error) {
 	return sourceReferences, nil
 }
 
-// imagesTopCopyFromDir builds a list of repository descriptors from the images
+// imagesToCopyFromRegistry builds a list of repository descriptors from the images
 // in a registry configuration.
 // It returns a repository descriptors slice with as many elements as the images
 // found and any error encountered. Each element of the slice is a list of
