@@ -11,10 +11,14 @@ env:
     GOPATH: &gopath "/var/tmp/go"
     GOBIN: "${GOPATH}/bin"
     GOCACHE: "${GOPATH}/cache"
-    GOSRC: &gosrc "/var/tmp/go/src/github.com/containers/podman"
+    GOSRC: &gosrc "/var/tmp/go/src/github.com/containers/skopeo"
+    # Required for consistency with containers/image CI
+    SKOPEO_PATH: *gosrc
     CIRRUS_WORKING_DIR: *gosrc
     # The default is 'sh' if unspecified
     CIRRUS_SHELL: "/bin/bash"
+    # Save a little typing (path relative to $CIRRUS_WORKING_DIR)
+    SCRIPT_BASE: "./contrib/cirrus"
 
     ####
     #### Cache-image names to test with (double-quotes around names are critical)
@@ -37,12 +41,79 @@ env:
     UBUNTU_CONTAINER_FQIN: "quay.io/libpod/ubuntu_podman:${IMAGE_SUFFIX}"
     PRIOR_UBUNTU_CONTAINER_FQIN: "quay.io/libpod/prior-ubuntu_podman:${IMAGE_SUFFIX}"
 
+    # Equivilent to image produced by 'make build-container'
+    SKOPEO_CI_CONTAINER_FQIN: "quay.io/skopeo/ci:${DEST_BRANCH}"
+
 
 # Default timeout for each task
 timeout_in: 30m
 
 
 gcp_credentials: ENCRYPTED[52d9e807b531b37ab14e958cb5a72499460663f04c8d73e22ad608c027a31118420f1c80f0be0882fbdf96f49d8f9ac0]
+
+
+validate_task:
+    # The git-validation tool doesn't work well on branch or tag push,
+    # under Cirrus-CI, due to challenges obtaining the starting commit ID.
+    # Only do validation for PRs.
+    only_if: $CIRRUS_PR != ''
+    container:  &build_container
+        image: "${SKOPEO_CI_CONTAINER_FQIN}"
+        cpu: 4
+        memory: 8
+    script: make validate-local
+
+
+cross_task:
+    # TODO: hack/travis_osx.sh doesn't work under cirrus-ci
+    #       for some unknown reason.  Remove the next line when
+    #       fixed (remember to remove from .travis.yml also).
+    allow_failures: $CI == $CI
+    macos_instance:
+        image: catalina-xcode-11.3.1
+    brew_script: brew install gpgme go go-md2man
+    test_script: hack/travis_osx.sh
+
+
+#####
+##### NOTE: This task is subtantially duplicated in the containers/image
+##### repository's `.cirrus.yml`.  Changes made here should be fully merged
+##### prior to being manually duplicated and maintained in containers/image.
+#####
+test_skopeo_task:
+    alias: test_skopeo
+    depends_on:
+        - validate
+    gce_instance:
+        image_project: libpod-218412
+        zone: "us-central1-f"
+        cpu: 2
+        memory: "4Gb"
+        # Required to be 200gig, do not modify - has i/o performance impact
+        # according to gcloud CLI tool warning messages.
+        disk: 200
+        image_name: ${FEDORA_CACHE_IMAGE_NAME}
+    matrix:
+        - name: "Skopeo Test"
+          env:
+              BUILDTAGS: 'btrfs_noversion libdm_no_deferred_remove'
+        - name: "Skopeo Test w/ opengpg"
+          env:
+              BUILDTAGS: 'btrfs_noversion libdm_no_deferred_remove containers_image_openpgp'
+    setup_script: >-
+        "${GOSRC}/${SCRIPT_BASE}/runner.sh" setup
+    vendor_script: >-
+        "${SKOPEO_PATH}/${SCRIPT_BASE}/runner.sh" vendor
+    build_script: >-
+        "${SKOPEO_PATH}/${SCRIPT_BASE}/runner.sh" build
+    validate_script: >-
+        "${SKOPEO_PATH}/${SCRIPT_BASE}/runner.sh" validate
+    unit_script: >-
+        "${SKOPEO_PATH}/${SCRIPT_BASE}/runner.sh" unit
+    integration_script: >-
+        "${SKOPEO_PATH}/${SCRIPT_BASE}/runner.sh" integration
+    system_script: >
+        "${SKOPEO_PATH}/${SCRIPT_BASE}/runner.sh" system
 
 
 # This task is critical.  It updates the "last-used by" timestamp stored
@@ -79,6 +150,9 @@ success_task:
     alias: success
     # N/B: ALL tasks must be listed here, minus their '_task' suffix.
     depends_on:
+        - validate
+        - cross
+        - test_skopeo
         - meta
     container: *smallcontainer
     env:

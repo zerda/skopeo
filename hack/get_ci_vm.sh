@@ -43,8 +43,8 @@ elif [[ "$1" == "--setup" ]]; then
     in_get_ci_vm "$1"
     # get_ci_vm container entrypoint calls us with this option on the
     # Cirrus-CI environment instance, to perform repo.-specific setup.
-    cd $REPO_DIRPATH
-    echo "+ No further setup performed" > /dev/stderr
+    echo "+ Executing setup" > /dev/stderr
+    ${GOSRC}/${SCRIPT_BASE}/runner.sh setup
 else
     # Create and access VM for specified Cirrus-CI task
     mkdir -p $HOME/.config/gcloud/ssh
