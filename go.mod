@@ -3,14 +3,13 @@ module github.com/containers/skopeo
 go 1.12
 
 require (
-	github.com/containers/common v0.36.0
+	github.com/containers/common v0.37.0
 	github.com/containers/image/v5 v5.11.1
 	github.com/containers/ocicrypt v1.1.1
-	github.com/containers/storage v1.29.0
-	github.com/docker/docker v17.12.0-ce-rc1.0.20201020191947-73dc6a680cdd+incompatible
+	github.com/containers/storage v1.30.0
+	github.com/docker/docker v20.10.3-0.20210216175712-646072ed6524+incompatible
 	github.com/dsnet/compress v0.0.2-0.20210315054119-f66993602bf5 // indirect
 	github.com/go-check/check v0.0.0-20180628173108-788fd7840127
-	github.com/moby/term v0.0.0-20201110203204-bea5bbe245bf // indirect
 	github.com/opencontainers/go-digest v1.0.0
 	github.com/opencontainers/image-spec v1.0.2-0.20190823105129-775207bd45b6
 	github.com/opencontainers/image-tools v0.0.0-20170926011501-6d941547fa1d
