@@ -31,12 +31,13 @@ type syncOptions struct {
 	srcImage          *imageOptions     // Source image options
 	destImage         *imageDestOptions // Destination image options
 	retryOpts         *retry.RetryOptions
-	removeSignatures  bool   // Do not copy signatures from the source image
-	signByFingerprint string // Sign the image using a GPG key with the specified fingerprint
-	source            string // Source repository name
-	destination       string // Destination registry name
-	scoped            bool   // When true, namespace copied images at destination using the source repository name
-	all               bool   // Copy all of the images if an image in the source is a list
+	removeSignatures  bool           // Do not copy signatures from the source image
+	signByFingerprint string         // Sign the image using a GPG key with the specified fingerprint
+	format            optionalString // Force conversion of the image to a specified format
+	source            string         // Source repository name
+	destination       string         // Destination registry name
+	scoped            bool           // When true, namespace copied images at destination using the source repository name
+	all               bool           // Copy all of the images if an image in the source is a list
 }
 
 // repoDescriptor contains information of a single repository used as a sync source.
@@ -95,6 +96,7 @@ See skopeo-sync(1) for details.
 	flags := cmd.Flags()
 	flags.BoolVar(&opts.removeSignatures, "remove-signatures", false, "Do not copy signatures from SOURCE images")
 	flags.StringVar(&opts.signByFingerprint, "sign-by", "", "Sign the image using a GPG key with the specified `FINGERPRINT`")
+	flags.VarP(newOptionalStringValue(&opts.format), "format", "f", `MANIFEST TYPE (oci, v2s1, or v2s2) to use when syncing image(s) to a destination (default is manifest type of source)`)
 	flags.StringVarP(&opts.source, "src", "s", "", "SOURCE transport type")
 	flags.StringVarP(&opts.destination, "dest", "d", "", "DESTINATION transport type")
 	flags.BoolVar(&opts.scoped, "scoped", false, "Images at DESTINATION are prefix using the full source image path as scope")
@@ -536,6 +538,14 @@ func (opts *syncOptions) run(args []string, stdout io.Writer) error {
 		return err
 	}
 
+	var manifestType string
+	if opts.format.present {
+		manifestType, err = parseManifestFormat(opts.format.value)
+		if err != nil {
+			return err
+		}
+	}
+
 	ctx, cancel := opts.global.commandTimeoutContext()
 	defer cancel()
 
@@ -562,6 +572,7 @@ func (opts *syncOptions) run(args []string, stdout io.Writer) error {
 		DestinationCtx:                        destinationCtx,
 		ImageListSelection:                    imageListSelection,
 		OptimizeDestinationImageAlreadyExists: true,
+		ForceManifestMIMEType:                 manifestType,
 	}
 
 	for _, srcRepo := range srcRepoList {

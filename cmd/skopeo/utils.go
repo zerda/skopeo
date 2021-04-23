@@ -2,14 +2,17 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"os"
 	"strings"
 
 	"github.com/containers/common/pkg/retry"
+	"github.com/containers/image/v5/manifest"
 	"github.com/containers/image/v5/pkg/compression"
 	"github.com/containers/image/v5/transports/alltransports"
 	"github.com/containers/image/v5/types"
+	imgspecv1 "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -244,6 +247,21 @@ func parseImageSource(ctx context.Context, opts *imageOptions, name string) (typ
 		return nil, err
 	}
 	return ref.NewImageSource(ctx, sys)
+}
+
+// parseManifestFormat parses format parameter for copy and sync command.
+// It returns string value to use as manifest MIME type
+func parseManifestFormat(manifestFormat string) (string, error) {
+	switch manifestFormat {
+	case "oci":
+		return imgspecv1.MediaTypeImageManifest, nil
+	case "v2s1":
+		return manifest.DockerV2Schema1SignedMediaType, nil
+	case "v2s2":
+		return manifest.DockerV2Schema2MediaType, nil
+	default:
+		return "", fmt.Errorf("unknown format %q. Choose one of the supported formats: 'oci', 'v2s1', or 'v2s2'", manifestFormat)
+	}
 }
 
 // usageTemplate returns the usage template for skopeo commands

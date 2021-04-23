@@ -70,6 +70,42 @@ _skopeo_copy() {
     _complete_ "$options_with_args" "$boolean_options" "$transports"
 }
 
+_skopeo_sync() {
+    local options_with_args="
+    --authfile
+    --dest
+    --dest-authfile
+    --dest-cert-
+    --dest-creds
+    --dest-registry-token string
+    --format
+    --retry-times
+    --sign-by
+    --src
+    --src-authfile
+    --src-cert-dir
+    --src-creds
+    --src-registry-token
+    "
+
+    local boolean_options="
+    --all
+    --dest-no-creds
+    --dest-tls-verify
+    --remove-signatures
+    --scoped
+    --src-no-creds
+    --src-tls-verify
+    "
+
+    local transports
+    transports="
+    $(_skopeo_supported_transports "${FUNCNAME//"_skopeo_"/}")
+    "
+
+    _complete_ "$options_with_args" "$boolean_options" "$transports"
+}
+
 _skopeo_inspect() {
      local options_with_args="
      --authfile
@@ -260,7 +296,7 @@ _cli_bash_autocomplete() {
      local counter=1
      while [ $counter -lt "$cword" ]; do
          case "${words[$counter]}" in
-             skopeo|copy|inspect|delete|manifest-digest|standalone-sign|standalone-verify|help|h|list-repository-tags)
+             skopeo|copy|sync|inspect|delete|manifest-digest|standalone-sign|standalone-verify|help|h|list-repository-tags)
                  command="${words[$counter]//-/_}"
                  cpos=$counter
                  (( cpos++ ))

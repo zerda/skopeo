@@ -9,14 +9,11 @@ import (
 	"github.com/containers/common/pkg/retry"
 	"github.com/containers/image/v5/copy"
 	"github.com/containers/image/v5/docker/reference"
-	"github.com/containers/image/v5/manifest"
 	"github.com/containers/image/v5/transports"
 	"github.com/containers/image/v5/transports/alltransports"
-	"github.com/spf13/cobra"
-
 	encconfig "github.com/containers/ocicrypt/config"
 	enchelpers "github.com/containers/ocicrypt/helpers"
-	imgspecv1 "github.com/opencontainers/image-spec/specs-go/v1"
+	"github.com/spf13/cobra"
 )
 
 type copyOptions struct {
@@ -112,15 +109,9 @@ func (opts *copyOptions) run(args []string, stdout io.Writer) error {
 
 	var manifestType string
 	if opts.format.present {
-		switch opts.format.value {
-		case "oci":
-			manifestType = imgspecv1.MediaTypeImageManifest
-		case "v2s1":
-			manifestType = manifest.DockerV2Schema1SignedMediaType
-		case "v2s2":
-			manifestType = manifest.DockerV2Schema2MediaType
-		default:
-			return fmt.Errorf("unknown format %q. Choose one of the supported formats: 'oci', 'v2s1', or 'v2s2'", opts.format.value)
+		manifestType, err = parseManifestFormat(opts.format.value)
+		if err != nil {
+			return err
 		}
 	}
 
