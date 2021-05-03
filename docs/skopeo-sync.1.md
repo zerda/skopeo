@@ -54,6 +54,8 @@ Path of the authentication file for the destination registry. Uses path given by
 
 **--dest** _transport_ Destination transport.
 
+**--format, -f** _manifest-type_ Manifest Type (oci, v2s1, or v2s2) to use when syncing image(s) to a destination (default is manifest type of source).
+
 **--scoped** Prefix images with the source image path, so that multiple images with the same name can be stored at _destination_.
 
 **--remove-signatures** Do not copy signatures, if any, from _source-image_. This is necessary when copying a signed image to a destination which does not support signatures.
