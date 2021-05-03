@@ -1251,14 +1251,6 @@ func (s *CopySuite) testCopySchemaConversionRegistries(c *check.C, schema1Regist
 	verifyManifestMIMEType(c, destDir, manifest.DockerV2Schema1SignedMediaType)
 }
 
-// Verify manifest in a dir: image at dir is expectedMIMEType.
-func verifyManifestMIMEType(c *check.C, dir string, expectedMIMEType string) {
-	manifestBlob, err := ioutil.ReadFile(filepath.Join(dir, "manifest.json"))
-	c.Assert(err, check.IsNil)
-	mimeType := manifest.GuessMIMEType(manifestBlob)
-	c.Assert(mimeType, check.Equals, expectedMIMEType)
-}
-
 const regConfFixture = "./fixtures/registries.conf"
 
 func (s *SkopeoSuite) TestSuccessCopySrcWithMirror(c *check.C) {

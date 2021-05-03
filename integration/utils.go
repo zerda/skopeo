@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/containers/image/v5/manifest"
 	"github.com/go-check/check"
 )
 
@@ -199,4 +200,12 @@ func runDecompressDirs(c *check.C, regexp string, args ...string) {
 	if regexp != "" {
 		c.Assert(string(out), check.Matches, "(?s)"+regexp) // (?s) : '.' will also match newlines
 	}
+}
+
+// Verify manifest in a dir: image at dir is expectedMIMEType.
+func verifyManifestMIMEType(c *check.C, dir string, expectedMIMEType string) {
+	manifestBlob, err := ioutil.ReadFile(filepath.Join(dir, "manifest.json"))
+	c.Assert(err, check.IsNil)
+	mimeType := manifest.GuessMIMEType(manifestBlob)
+	c.Assert(mimeType, check.Equals, expectedMIMEType)
 }

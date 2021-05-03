@@ -4,7 +4,9 @@ import (
 	"os"
 	"testing"
 
+	"github.com/containers/image/v5/manifest"
 	"github.com/containers/image/v5/types"
+	imgspecv1 "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -201,6 +203,38 @@ func TestImageDestOptionsNewSystemContext(t *testing.T) {
 	opts = fakeImageDestOptions(t, "dest-", []string{}, []string{"--dest-creds", ""})
 	_, err = opts.newSystemContext()
 	assert.Error(t, err)
+}
+
+func TestParseManifestFormat(t *testing.T) {
+	for _, testCase := range []struct {
+		formatParam          string
+		expectedManifestType string
+		expectErr            bool
+	}{
+		{"oci",
+			imgspecv1.MediaTypeImageManifest,
+			false},
+		{"v2s1",
+			manifest.DockerV2Schema1SignedMediaType,
+			false},
+		{"v2s2",
+			manifest.DockerV2Schema2MediaType,
+			false},
+		{"",
+			"",
+			true},
+		{"badValue",
+			"",
+			true},
+	} {
+		manifestType, err := parseManifestFormat(testCase.formatParam)
+		if testCase.expectErr {
+			require.Error(t, err)
+		} else {
+			require.NoError(t, err)
+		}
+		assert.Equal(t, manifestType, testCase.expectedManifestType)
+	}
 }
 
 // since there is a shared authfile image option and a non-shared (prefixed) one, make sure the override logic

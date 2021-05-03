@@ -12,8 +12,10 @@ import (
 
 	"github.com/containers/image/v5/docker"
 	"github.com/containers/image/v5/docker/reference"
+	"github.com/containers/image/v5/manifest"
 	"github.com/containers/image/v5/types"
 	"github.com/go-check/check"
+	imgspecv1 "github.com/opencontainers/image-spec/specs-go/v1"
 )
 
 const (
@@ -470,6 +472,26 @@ func (s *SyncSuite) TestYamlTLSVerify(c *check.C) {
 		os.RemoveAll(dir1)
 	}
 
+}
+
+func (s *SyncSuite) TestSyncManifestOutput(c *check.C) {
+	tmpDir, err := ioutil.TempDir("", "sync-manifest-output")
+	c.Assert(err, check.IsNil)
+	defer os.RemoveAll(tmpDir)
+
+	destDir1 := filepath.Join(tmpDir, "dest1")
+	destDir2 := filepath.Join(tmpDir, "dest2")
+	destDir3 := filepath.Join(tmpDir, "dest3")
+
+	//Split image:tag path from image URI for manifest comparison
+	imageDir := pullableTaggedImage[strings.LastIndex(pullableTaggedImage, "/")+1:]
+
+	assertSkopeoSucceeds(c, "", "sync", "--format=oci", "--all", "--src", "docker", "--dest", "dir", pullableTaggedImage, destDir1)
+	verifyManifestMIMEType(c, filepath.Join(destDir1, imageDir), imgspecv1.MediaTypeImageManifest)
+	assertSkopeoSucceeds(c, "", "sync", "--format=v2s2", "--all", "--src", "docker", "--dest", "dir", pullableTaggedImage, destDir2)
+	verifyManifestMIMEType(c, filepath.Join(destDir2, imageDir), manifest.DockerV2Schema2MediaType)
+	assertSkopeoSucceeds(c, "", "sync", "--format=v2s1", "--all", "--src", "docker", "--dest", "dir", pullableTaggedImage, destDir3)
+	verifyManifestMIMEType(c, filepath.Join(destDir3, imageDir), manifest.DockerV2Schema1SignedMediaType)
 }
 
 func (s *SyncSuite) TestDocker2DockerTagged(c *check.C) {
