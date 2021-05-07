@@ -246,6 +246,21 @@ func (s *CopySuite) TestCopyWithManifestListDigest(c *check.C) {
 	c.Assert(out, check.Equals, "")
 }
 
+func (s *CopySuite) TestCopyWithDigestfileOutput(c *check.C) {
+	tempdir, err := ioutil.TempDir("", "tempdir")
+	c.Assert(err, check.IsNil)
+	defer os.RemoveAll(tempdir)
+	dir1, err := ioutil.TempDir("", "copy-manifest-list-digest-dir")
+	c.Assert(err, check.IsNil)
+	defer os.RemoveAll(dir1)
+	digestOutPath := filepath.Join(tempdir, "digest.txt")
+	assertSkopeoSucceeds(c, "", "copy", "--digestfile="+digestOutPath, knownListImage, "dir:"+dir1)
+	readDigest, err := ioutil.ReadFile(digestOutPath)
+	c.Assert(err, check.IsNil)
+	_, err = digest.Parse(string(readDigest))
+	c.Assert(err, check.IsNil)
+}
+
 func (s *CopySuite) TestCopyWithManifestListStorageDigest(c *check.C) {
 	storage, err := ioutil.TempDir("", "copy-manifest-list-storage-digest")
 	c.Assert(err, check.IsNil)
