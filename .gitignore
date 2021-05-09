@@ -5,3 +5,6 @@ result
 
 # ignore JetBrains IDEs (GoLand) config folder
 .idea
+
+# Ignore the bin directory
+bin
