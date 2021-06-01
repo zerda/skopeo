@@ -65,6 +65,7 @@ validate_task:
 
 
 cross_task:
+    only_if: &not_docs $CIRRUS_CHANGE_TITLE !=~ '.*CI:DOCS.*'
     macos_instance:
         image: catalina-xcode
     setup_script: |
@@ -87,6 +88,7 @@ cross_task:
 #####
 test_skopeo_task:
     alias: test_skopeo
+    only_if: *not_docs
     depends_on:
         - validate
     gce_instance:
