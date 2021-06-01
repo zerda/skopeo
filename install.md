@@ -182,6 +182,11 @@ sudo apt-get install go-md2man
 sudo dnf install go-md2man
 ```
 
+```
+# MacOS:
+brew install go-md2man
+```
+
 Then
 
 ```bash
