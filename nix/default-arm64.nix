@@ -3,12 +3,25 @@ let
     crossSystem = {
       config = "aarch64-unknown-linux-gnu";
     };
+    overlays = [
+      (final: pkg: {
+        pcre = (static pkg.pcre).overrideAttrs (x: {
+          configureFlags = x.configureFlags ++ [
+            "--enable-static"
+          ];
+        });
+      })
+    ];
     config = {
       packageOverrides = pkg: {
+        autogen = (static pkg.autogen);
+        e2fsprogs = (static pkg.e2fsprogs);
+        gnupg = (static pkg.gnupg);
         gpgme = (static pkg.gpgme);
         libassuan = (static pkg.libassuan);
         libgpgerror = (static pkg.libgpgerror);
         libseccomp = (static pkg.libseccomp);
+        libuv = (static pkg.libuv);
         glib = (static pkg.glib).overrideAttrs (x: {
           outputs = [ "bin" "out" "dev" ];
           mesonFlags = [
@@ -24,6 +37,21 @@ let
             sed '1i#line 1 "${x.pname}-${x.version}/include/glib-2.0/gobject/gobjectnotifyqueue.c"' \
               -i "$dev"/include/glib-2.0/gobject/gobjectnotifyqueue.c
           '';
+        });
+        gnutls = (static pkg.gnutls).overrideAttrs (x: {
+          configureFlags = (x.configureFlags or [ ]) ++ [
+            "--disable-non-suiteb-curves"
+            "--disable-openssl-compatibility"
+            "--disable-rpath"
+            "--enable-local-libopts"
+            "--without-p11-kit"
+          ];
+        });
+        systemd = (static pkg.systemd).overrideAttrs (x: {
+          outputs = [ "out" "dev" ];
+          mesonFlags = x.mesonFlags ++ [
+            "-Dstatic-libsystemd=true"
+          ];
         });
       };
     };
@@ -47,8 +75,8 @@ let
     doCheck = false;
     enableParallelBuilding = true;
     outputs = [ "out" ];
-    nativeBuildInputs = [ bash gitMinimal go-md2man installShellFiles makeWrapper pkg-config which ];
-    buildInputs = [ glibc glibc.static gpgme libassuan libgpgerror libseccomp ];
+    nativeBuildInputs = [ bash go-md2man installShellFiles makeWrapper pcre pkg-config which ];
+    buildInputs = [ glibc glibc.static glib gpgme libassuan libgpgerror libseccomp ];
     prePatch = ''
       export CFLAGS='-static -pthread'
       export LDFLAGS='-s -w -static-libgcc -static'
