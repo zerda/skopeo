@@ -72,10 +72,9 @@ jobs:
         if: matrix.source == 'stable'
         id: sniff_test
         run: |
-          VERSION_OUTPUT="$(docker run localhost:5000/skopeo/${{ matrix.source }} \
-                            skopeo --storage-driver=vfs version)"
+          VERSION_OUTPUT="$(docker run localhost:5000/skopeo/${{ matrix.source }} --version)"
           echo "$VERSION_OUTPUT"
-          VERSION=$(grep -Em1 '^Version: ' <<<"$VERSION_OUTPUT" | awk '{print $2}')
+          VERSION=$(grep -Em1 '^skopeo version' <<<"$VERSION_OUTPUT" | awk '{print $3}')
           test -n "$VERSION"
           echo "::set-output name=version::${VERSION}"
 
