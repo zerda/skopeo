@@ -4,7 +4,7 @@ go 1.12
 
 require (
 	github.com/containers/common v0.41.0
-	github.com/containers/image/v5 v5.13.3-0.20210701090127-1f79791095ef
+	github.com/containers/image/v5 v5.14.1-0.20210728095305-9e1d7b48f1de
 	github.com/containers/ocicrypt v1.1.2
 	github.com/containers/storage v1.33.0
 	github.com/docker/docker v20.10.7+incompatible
