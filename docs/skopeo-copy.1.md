@@ -46,7 +46,7 @@ Path of the authentication file for the destination registry. Uses path given by
 
 After copying the image, write the digest of the resulting image to the file.
 
-**--format, -f** _manifest-type_ Manifest type (oci, v2s1, or v2s2) to use when saving image to directory using the 'dir:' transport (default is manifest type of source)
+**--format, -f** _manifest-type_ MANIFEST TYPE (oci, v2s1, or v2s2) to use in the destination (default is manifest type of source, with fallbacks)
 
 **--quiet, -q** suppress output information when copying images
 
