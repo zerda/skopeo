@@ -70,6 +70,7 @@ cross_task:
         image: catalina-xcode
     setup_script: |
         export PATH=$GOPATH/bin:$PATH
+        brew update
         brew install gpgme go go-md2man
         go get -u golang.org/x/lint/golint
     test_script: |
