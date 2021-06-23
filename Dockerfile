@@ -1,4 +1,4 @@
-FROM fedora
+FROM registry.fedoraproject.org/fedora:latest
 
 RUN dnf -y update && dnf install -y make git golang golang-github-cpuguy83-md2man \
 	# storage deps
