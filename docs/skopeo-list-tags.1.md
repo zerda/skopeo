@@ -25,6 +25,8 @@ Return a list of tags from _repository-name_ in a registry.
 
   **--registry-token** _Bearer token_ for accessing the registry.
 
+  **--retry-times**  the number of times to retry, retry wait time will be exponentially increased based on the number of failed attempts.
+
 ## REPOSITORY NAMES
 
 Repository names are transport-specific references as each transport may have its own concept of a "repository" and "tags". Currently, only the Docker transport is supported.

@@ -36,6 +36,8 @@ Additionally, the registry must allow deletions by setting `REGISTRY_STORAGE_DEL
 
 **--registry-token** _Bearer token_ for accessing the registry.
 
+**--retry-times**  the number of times to retry, retry wait time will be exponentially increased based on the number of failed attempts.
+
 ## EXAMPLES
 
 Mark image example/pause for deletion from the registry.example.com registry:

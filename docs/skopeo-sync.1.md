@@ -82,6 +82,8 @@ Path of the authentication file for the destination registry. Uses path given by
 
 **--dest-registry-token** _Bearer token_ for accessing the destination registry.
 
+**--retry-times**  the number of times to retry, retry wait time will be exponentially increased based on the number of failed attempts.
+
 ## EXAMPLES
 
 ### Synchronizing to a local directory

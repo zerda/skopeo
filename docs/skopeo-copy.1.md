@@ -92,6 +92,8 @@ Existing signatures, if any, are preserved as well.
 
 **--dest-registry-token** _Bearer token_ for accessing the destination registry.
 
+**--retry-times**  the number of times to retry, retry wait time will be exponentially increased based on the number of failed attempts.
+
 ## EXAMPLES
 
 To just copy an image from one registry to another:
