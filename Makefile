@@ -10,12 +10,12 @@ export GOPROXY=https://proxy.golang.org
 # (and the user will probably find out because the cgo compilation will fail).
 GPGME_ENV := CGO_CFLAGS="$(shell gpgme-config --cflags 2>/dev/null)" CGO_LDFLAGS="$(shell gpgme-config --libs 2>/dev/null)"
 
-# Normally empty, DESTDIR can be used to relocate the entire install-tree
+# The following variables very roughly follow https://www.gnu.org/prep/standards/standards.html#Makefile-Conventions .
 DESTDIR ?=
-CONTAINERSCONFDIR ?= ${DESTDIR}/etc/containers
+PREFIX ?= /usr/local
+CONTAINERSCONFDIR ?= /etc/containers
 REGISTRIESDDIR ?= ${CONTAINERSCONFDIR}/registries.d
-SIGSTOREDIR ?= ${DESTDIR}/var/lib/containers/sigstore
-PREFIX ?= ${DESTDIR}/usr/local
+SIGSTOREDIR ?= /var/lib/containers/sigstore
 BINDIR ?= ${PREFIX}/bin
 MANDIR ?= ${PREFIX}/share/man
 BASHCOMPLETIONSDIR ?= ${PREFIX}/share/bash-completion/completions
@@ -153,23 +153,23 @@ clean:
 	rm -rf bin docs/*.1
 
 install: install-binary install-docs install-completions
-	install -d -m 755 ${SIGSTOREDIR}
-	install -d -m 755 ${CONTAINERSCONFDIR}
-	install -m 644 default-policy.json ${CONTAINERSCONFDIR}/policy.json
-	install -d -m 755 ${REGISTRIESDDIR}
-	install -m 644 default.yaml ${REGISTRIESDDIR}/default.yaml
+	install -d -m 755 ${DESTDIR}${SIGSTOREDIR}
+	install -d -m 755 ${DESTDIR}${CONTAINERSCONFDIR}
+	install -m 644 default-policy.json ${DESTDIR}${CONTAINERSCONFDIR}/policy.json
+	install -d -m 755 ${DESTDIR}${REGISTRIESDDIR}
+	install -m 644 default.yaml ${DESTDIR}${REGISTRIESDDIR}/default.yaml
 
 install-binary: bin/skopeo
-	install -d -m 755 ${BINDIR}
-	install -m 755 bin/skopeo ${BINDIR}/skopeo
+	install -d -m 755 ${DESTDIR}${BINDIR}
+	install -m 755 bin/skopeo ${DESTDIR}${BINDIR}/skopeo
 
 install-docs: docs
-	install -d -m 755 ${MANDIR}/man1
-	install -m 644 docs/*.1 ${MANDIR}/man1
+	install -d -m 755 ${DESTDIR}${MANDIR}/man1
+	install -m 644 docs/*.1 ${DESTDIR}${MANDIR}/man1
 
 install-completions:
-	install -m 755 -d ${BASHCOMPLETIONSDIR}
-	install -m 644 completions/bash/skopeo ${BASHCOMPLETIONSDIR}/skopeo
+	install -m 755 -d ${DESTDIR}${BASHCOMPLETIONSDIR}
+	install -m 644 completions/bash/skopeo ${DESTDIR}${BASHCOMPLETIONSDIR}/skopeo
 
 shell: build-container
 	$(CONTAINER_RUN) bash
