@@ -62,7 +62,7 @@ _run_validate() {
 }
 
 _run_unit() {
-    podmanmake test-integration-local BUILDTAGS="$BUILDTAGS"
+    podmanmake test-unit-local BUILDTAGS="$BUILDTAGS"
 }
 
 _run_integration() {
