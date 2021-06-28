@@ -4,7 +4,7 @@
 skopeo\-logout - Logout of a container registry.
 
 ## SYNOPSIS
-**skopeo logout** [*options*] *registry*
+**skopeo logout** [*options*] _registry_
 
 ## DESCRIPTION
 **skopeo logout** logs out of a specified registry server by deleting the cached credentials

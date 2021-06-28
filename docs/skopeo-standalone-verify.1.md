@@ -4,7 +4,7 @@
 skopeo\-standalone\-verify - Verify an image signature.
 
 ## SYNOPSIS
-**skopeo standalone-verify** _manifest docker-reference key-fingerprint signature_
+**skopeo standalone-verify** _manifest_ _docker-reference_ _key-fingerprint_ _signature_
 
 ## DESCRIPTION
 
@@ -33,4 +33,3 @@ skopeo(1), containers-signature(5)
 ## AUTHORS
 
 Antonio Murdaca <runcom@redhat.com>, Miloslav Trmac <mitr@redhat.com>, Jhon Honce <jhonce@redhat.com>
-

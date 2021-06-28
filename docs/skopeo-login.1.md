@@ -4,7 +4,7 @@
 skopeo\-login - Login to a container registry.
 
 ## SYNOPSIS
-**skopeo login** [*options*] *registry*
+**skopeo login** [*options*] _registry_
 
 ## DESCRIPTION
 **skopeo login** logs into a specified registry server with the correct username
