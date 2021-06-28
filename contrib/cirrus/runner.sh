@@ -57,6 +57,10 @@ _run_build() {
     podmanmake bin/skopeo BUILDTAGS="$BUILDTAGS"
 }
 
+_run_cross() {
+    podmanmake local-cross BUILDTAGS="$BUILDTAGS"
+}
+
 _run_validate() {
     podmanmake validate-local BUILDTAGS="$BUILDTAGS"
 }
