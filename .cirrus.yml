@@ -66,8 +66,10 @@ validate_task:
         make vendor && hack/tree_status.sh
 
 
-cross_task:
+osx_task:
     only_if: &not_docs $CIRRUS_CHANGE_TITLE !=~ '.*CI:DOCS.*'
+    depends_on:
+        - validate
     macos_instance:
         image: catalina-xcode
     setup_script: |
@@ -82,6 +84,28 @@ cross_task:
         make validate-local test-unit-local bin/skopeo
         sudo make install
         /usr/local/bin/skopeo -v
+
+
+cross_task:
+    alias: cross
+    only_if: *not_docs
+    depends_on:
+        - validate
+    gce_instance:
+        image_project: libpod-218412
+        zone: "us-central1-f"
+        cpu: 2
+        memory: "4Gb"
+        # Required to be 200gig, do not modify - has i/o performance impact
+        # according to gcloud CLI tool warning messages.
+        disk: 200
+        image_name: ${FEDORA_CACHE_IMAGE_NAME}
+    env:
+        BUILDTAGS: 'btrfs_noversion libdm_no_deferred_remove containers_image_openpgp'
+    setup_script: >-
+        "${GOSRC}/${SCRIPT_BASE}/runner.sh" setup
+    cross_script: >-
+        "${GOSRC}/${SCRIPT_BASE}/runner.sh" cross
 
 
 #####
@@ -161,6 +185,7 @@ success_task:
     # N/B: ALL tasks must be listed here, minus their '_task' suffix.
     depends_on:
         - validate
+        - osx
         - cross
         - test_skopeo
         - meta
