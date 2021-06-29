@@ -78,15 +78,15 @@ See [containers-transports(5)](https://github.com/containers/image/blob/master/d
 | Command                                   | Description                                                                    |
 | ----------------------------------------- | ------------------------------------------------------------------------------ |
 | [skopeo-copy(1)](skopeo-copy.1.md)        | Copy an image (manifest, filesystem layers, signatures) from one location to another. |
-| [skopeo-delete(1)](skopeo-delete.1.md)    | Mark image-name for deletion.                                                  |
-| [skopeo-inspect(1)](skopeo-inspect.1.md)  | Return low-level information about image-name in a registry.                   |
-| [skopeo-list-tags(1)](skopeo-list-tags.1.md)  | List the tags for the given transport/repository.                           |
+| [skopeo-delete(1)](skopeo-delete.1.md)    | Mark the _image-name_ for later deletion by the registry's garbage collector.  |
+| [skopeo-inspect(1)](skopeo-inspect.1.md)  | Return low-level information about _image-name_ in a registry.                 |
+| [skopeo-list-tags(1)](skopeo-list-tags.1.md)  | Return a list of tags for the transport-specific image repository.         |
 | [skopeo-login(1)](skopeo-login.1.md)  | Login to a container registry. |
 | [skopeo-logout(1)](skopeo-logout.1.md)  | Logout of a container registry. |
-| [skopeo-manifest-digest(1)](skopeo-manifest-digest.1.md)    | Compute a manifest digest of manifest-file and write it to standard output.|
-| [skopeo-standalone-sign(1)](skopeo-standalone-sign.1.md)    | Sign an image.                                               |
-| [skopeo-standalone-verify(1)](skopeo-standalone-verify.1.md)| Verify an image.                                             |
-| [skopeo-sync(1)](skopeo-sync.1.md)| Copy images from one or more repositories to a user specified destination.             |
+| [skopeo-manifest-digest(1)](skopeo-manifest-digest.1.md)    | Compute a manifest digest for a manifest-file and write it to standard output. |
+| [skopeo-standalone-sign(1)](skopeo-standalone-sign.1.md)    | Debugging tool - Publish and sign an image in one step.      |
+| [skopeo-standalone-verify(1)](skopeo-standalone-verify.1.md)| Verify an image signature.                                   |
+| [skopeo-sync(1)](skopeo-sync.1.md)| Synchronize images between container registries and local directories.                 |
 
 ## FILES
   **/etc/containers/policy.json**

@@ -80,7 +80,7 @@ func syncCmd(global *globalOptions) *cobra.Command {
 	}
 
 	cmd := &cobra.Command{
-		Use:   "sync [command options] --src SOURCE-LOCATION --dest DESTINATION-LOCATION SOURCE DESTINATION",
+		Use:   "sync [command options] --src TRANSPORT --dest TRANSPORT SOURCE DESTINATION",
 		Short: "Synchronize one or more images from one location to another",
 		Long: fmt.Sprint(`Copy all the images from a SOURCE to a DESTINATION.
 

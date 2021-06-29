@@ -4,7 +4,7 @@
 skopeo\-copy - Copy an image (manifest, filesystem layers, signatures) from one location to another.
 
 ## SYNOPSIS
-**skopeo copy** [**--sign-by=**_key-ID_] _source-image destination-image_
+**skopeo copy** [*options*] _source-image_ _destination-image_
 
 ## DESCRIPTION
 Copy an image (manifest, filesystem layers, signatures) from one location to another.
@@ -155,4 +155,3 @@ skopeo(1), skopeo-login(1), docker-login(1), containers-auth.json(5), containers
 ## AUTHORS
 
 Antonio Murdaca <runcom@redhat.com>, Miloslav Trmac <mitr@redhat.com>, Jhon Honce <jhonce@redhat.com>
-

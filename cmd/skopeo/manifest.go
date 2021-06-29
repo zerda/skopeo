@@ -16,7 +16,7 @@ type manifestDigestOptions struct {
 func manifestDigestCmd() *cobra.Command {
 	var opts manifestDigestOptions
 	cmd := &cobra.Command{
-		Use:     "manifest-digest MANIFEST",
+		Use:     "manifest-digest MANIFEST-FILE",
 		Short:   "Compute a manifest digest of a file",
 		RunE:    commandAction(opts.run),
 		Example: "skopeo manifest-digest manifest.json",

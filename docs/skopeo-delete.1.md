@@ -4,7 +4,7 @@
 skopeo\-delete - Mark the _image-name_ for later deletion by the registry's garbage collector.
 
 ## SYNOPSIS
-**skopeo delete** _image-name_
+**skopeo delete** [*options*] _image-name_
 
 Mark _image-name_ for deletion.  To release the allocated disk space, you must login to the container registry server and execute the container registry garbage collector. E.g.,
 
@@ -53,4 +53,3 @@ skopeo(1), skopeo-login(1), docker-login(1), containers-auth.json(5)
 ## AUTHORS
 
 Antonio Murdaca <runcom@redhat.com>, Miloslav Trmac <mitr@redhat.com>, Jhon Honce <jhonce@redhat.com>
-

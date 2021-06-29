@@ -21,7 +21,7 @@ func loginCmd(global *globalOptions) *cobra.Command {
 		global: global,
 	}
 	cmd := &cobra.Command{
-		Use:     "login",
+		Use:     "login [command options] REGISTRY",
 		Short:   "Login to a container registry",
 		Long:    "Login to a container registry on a specified server.",
 		RunE:    commandAction(opts.run),

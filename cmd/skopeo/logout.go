@@ -17,7 +17,7 @@ func logoutCmd(global *globalOptions) *cobra.Command {
 		global: global,
 	}
 	cmd := &cobra.Command{
-		Use:     "logout",
+		Use:     "logout [command options] REGISTRY",
 		Short:   "Logout of a container registry",
 		Long:    "Logout of a container registry on a specified server.",
 		RunE:    commandAction(opts.run),

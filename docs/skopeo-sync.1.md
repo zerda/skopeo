@@ -5,7 +5,7 @@ skopeo\-sync - Synchronize images between container registries and local directo
 
 
 ## SYNOPSIS
-**skopeo sync** --src _transport_ --dest _transport_ _source_ _destination_
+**skopeo sync** [*options*] --src _transport_ --dest _transport_ _source_ _destination_
 
 ## DESCRIPTION
 Synchronize images between container registries and local directories.
