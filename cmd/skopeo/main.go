@@ -102,6 +102,11 @@ func main() {
 		return
 	}
 	rootCmd, _ := createApp()
+	// Currently, skopeo uses manually written completions.  Cobra allows
+	// for auto-generating completions for various shells.  Podman is
+	// already making us of that.  If Skopeo decides to follow, please
+	// remove the line below (and hide the `completion` command).
+	rootCmd.CompletionOptions.DisableDefaultCmd = true
 	if err := rootCmd.Execute(); err != nil {
 		logrus.Fatal(err)
 	}
