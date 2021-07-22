@@ -506,12 +506,12 @@ func (s *CopySuite) TestCopySimpleAtomicRegistry(c *check.C) {
 
 	// FIXME: It would be nice to use one of the local Docker registries instead of needing an Internet connection.
 	// "pull": docker: → dir:
-	assertSkopeoSucceeds(c, "", "copy", "docker://estesp/busybox:amd64", "dir:"+dir1)
+	assertSkopeoSucceeds(c, "", "copy", testFQIN64, "dir:"+dir1)
 	// "push": dir: → atomic:
 	assertSkopeoSucceeds(c, "", "--tls-verify=false", "--debug", "copy", "dir:"+dir1, "atomic:localhost:5000/myns/unsigned:unsigned")
 	// The result of pushing and pulling is an equivalent image, except for schema1 embedded names.
 	assertSkopeoSucceeds(c, "", "--tls-verify=false", "copy", "atomic:localhost:5000/myns/unsigned:unsigned", "dir:"+dir2)
-	assertSchema1DirImagesAreEqualExceptNames(c, dir1, "estesp/busybox:amd64", dir2, "myns/unsigned:unsigned")
+	assertSchema1DirImagesAreEqualExceptNames(c, dir1, "libpod/busybox:amd64", dir2, "myns/unsigned:unsigned")
 }
 
 // The most basic (skopeo copy) use:
@@ -602,7 +602,7 @@ func (s *CopySuite) TestCopyEncryption(c *check.C) {
 		"oci:"+encryptedImgDir+":encrypted", "oci:"+decryptedImgDir+":decrypted")
 
 	// Copy a standard busybox image locally
-	assertSkopeoSucceeds(c, "", "copy", "docker://busybox:1.31.1", "oci:"+originalImageDir+":latest")
+	assertSkopeoSucceeds(c, "", "copy", testFQIN+":1.30.1", "oci:"+originalImageDir+":latest")
 
 	// Encrypt the image
 	assertSkopeoSucceeds(c, "", "copy", "--encryption-key",
@@ -633,7 +633,7 @@ func (s *CopySuite) TestCopyEncryption(c *check.C) {
 	matchLayerBlobBinaryType(c, decryptedImgDir+"/blobs/sha256", "application/x-gzip", 1)
 
 	// Copy a standard multi layer nginx image locally
-	assertSkopeoSucceeds(c, "", "copy", "docker://nginx:1.17.8", "oci:"+multiLayerImageDir+":latest")
+	assertSkopeoSucceeds(c, "", "copy", testFQINMultiLayer, "oci:"+multiLayerImageDir+":latest")
 
 	// Partially encrypt the image
 	assertSkopeoSucceeds(c, "", "copy", "--encryption-key", "jwe:"+keysDir+"/public.key",
@@ -738,11 +738,11 @@ func (s *CopySuite) TestCopyStreaming(c *check.C) {
 
 	// FIXME: It would be nice to use one of the local Docker registries instead of needing an Internet connection.
 	// streaming: docker: → atomic:
-	assertSkopeoSucceeds(c, "", "--tls-verify=false", "--debug", "copy", "docker://estesp/busybox:amd64", "atomic:localhost:5000/myns/unsigned:streaming")
+	assertSkopeoSucceeds(c, "", "--tls-verify=false", "--debug", "copy", testFQIN64, "atomic:localhost:5000/myns/unsigned:streaming")
 	// Compare (copies of) the original and the copy:
-	assertSkopeoSucceeds(c, "", "copy", "docker://estesp/busybox:amd64", "dir:"+dir1)
+	assertSkopeoSucceeds(c, "", "copy", testFQIN64, "dir:"+dir1)
 	assertSkopeoSucceeds(c, "", "--tls-verify=false", "copy", "atomic:localhost:5000/myns/unsigned:streaming", "dir:"+dir2)
-	assertSchema1DirImagesAreEqualExceptNames(c, dir1, "estesp/busybox:amd64", dir2, "myns/unsigned:streaming")
+	assertSchema1DirImagesAreEqualExceptNames(c, dir1, "libpod/busybox:amd64", dir2, "myns/unsigned:streaming")
 	// FIXME: Also check pushing to docker://
 }
 
@@ -762,7 +762,7 @@ func (s *CopySuite) TestCopyOCIRoundTrip(c *check.C) {
 	defer os.RemoveAll(oci2)
 
 	// Docker -> OCI
-	assertSkopeoSucceeds(c, "", "--tls-verify=false", "--debug", "copy", "docker://busybox", "oci:"+oci1+":latest")
+	assertSkopeoSucceeds(c, "", "--tls-verify=false", "--debug", "copy", testFQIN, "oci:"+oci1+":latest")
 	// OCI -> Docker
 	assertSkopeoSucceeds(c, "", "--tls-verify=false", "--debug", "copy", "oci:"+oci1+":latest", ourRegistry+"original/busybox:oci_copy")
 	// Docker -> OCI
@@ -813,16 +813,16 @@ func (s *CopySuite) TestCopySignatures(c *check.C) {
 	defer os.Remove(policy)
 
 	// type: reject
-	assertSkopeoFails(c, ".*Source image rejected: Running image docker://busybox:latest is rejected by policy.*",
-		"--policy", policy, "copy", "docker://busybox:latest", dirDest)
+	assertSkopeoFails(c, fmt.Sprintf(".*Source image rejected: Running image %s:latest is rejected by policy.*", testFQIN),
+		"--policy", policy, "copy", testFQIN+":latest", dirDest)
 
 	// type: insecureAcceptAnything
 	assertSkopeoSucceeds(c, "", "--policy", policy, "copy", "docker://quay.io/openshift/origin-hello-openshift", dirDest)
 
 	// type: signedBy
 	// Sign the images
-	assertSkopeoSucceeds(c, "", "--tls-verify=false", "copy", "--sign-by", "personal@example.com", "docker://busybox:1.26", "atomic:localhost:5006/myns/personal:personal")
-	assertSkopeoSucceeds(c, "", "--tls-verify=false", "copy", "--sign-by", "official@example.com", "docker://busybox:1.26.1", "atomic:localhost:5006/myns/official:official")
+	assertSkopeoSucceeds(c, "", "--tls-verify=false", "copy", "--sign-by", "personal@example.com", testFQIN+":1.26", "atomic:localhost:5006/myns/personal:personal")
+	assertSkopeoSucceeds(c, "", "--tls-verify=false", "copy", "--sign-by", "official@example.com", testFQIN+":1.26.1", "atomic:localhost:5006/myns/official:official")
 	// Verify that we can pull them
 	assertSkopeoSucceeds(c, "", "--tls-verify=false", "--policy", policy, "copy", "atomic:localhost:5006/myns/personal:personal", dirDest)
 	assertSkopeoSucceeds(c, "", "--tls-verify=false", "--policy", policy, "copy", "atomic:localhost:5006/myns/official:official", dirDest)
@@ -876,8 +876,8 @@ func (s *CopySuite) TestCopyDirSignatures(c *check.C) {
 	defer os.Remove(policy)
 
 	// Get some images.
-	assertSkopeoSucceeds(c, "", "copy", "docker://estesp/busybox:armfh", topDirDest+"/dir1")
-	assertSkopeoSucceeds(c, "", "copy", "docker://estesp/busybox:s390x", topDirDest+"/dir2")
+	assertSkopeoSucceeds(c, "", "copy", testFQIN+":armfh", topDirDest+"/dir1")
+	assertSkopeoSucceeds(c, "", "copy", testFQIN+":s390x", topDirDest+"/dir2")
 
 	// Sign the images. By coping from a topDirDest/dirN, also test that non-/restricted paths
 	// use the dir:"" default of insecureAcceptAnything.
@@ -993,7 +993,7 @@ func (s *CopySuite) TestCopyDockerSigstore(c *check.C) {
 	c.Assert(err, check.IsNil)
 
 	// Get an image to work with.  Also verifies that we can use Docker repositories with no sigstore configured.
-	assertSkopeoSucceeds(c, "", "--tls-verify=false", "--registries.d", registriesDir, "copy", "docker://busybox", ourRegistry+"original/busybox")
+	assertSkopeoSucceeds(c, "", "--tls-verify=false", "--registries.d", registriesDir, "copy", testFQIN, ourRegistry+"original/busybox")
 	// Pulling an unsigned image fails.
 	assertSkopeoFails(c, ".*Source image rejected: A signature was required, but no signature exists.*",
 		"--tls-verify=false", "--policy", policy, "--registries.d", registriesDir, "copy", ourRegistry+"original/busybox", dirDest)
@@ -1047,7 +1047,7 @@ func (s *CopySuite) TestCopyAtomicExtension(c *check.C) {
 	defer os.Remove(policy)
 
 	// Get an image to work with to an atomic: destination.  Also verifies that we can use Docker repositories without X-Registry-Supports-Signatures
-	assertSkopeoSucceeds(c, "", "--tls-verify=false", "--registries.d", registriesDir, "copy", "docker://busybox", "atomic:localhost:5000/myns/extension:unsigned")
+	assertSkopeoSucceeds(c, "", "--tls-verify=false", "--registries.d", registriesDir, "copy", testFQIN, "atomic:localhost:5000/myns/extension:unsigned")
 	// Pulling an unsigned image using atomic: fails.
 	assertSkopeoFails(c, ".*Source image rejected: A signature was required, but no signature exists.*",
 		"--tls-verify=false", "--policy", policy,
@@ -1071,7 +1071,7 @@ func (s *CopySuite) TestCopyAtomicExtension(c *check.C) {
 
 	// Get another image (different so that they don't share signatures, and sign it using docker://)
 	assertSkopeoSucceeds(c, "", "--tls-verify=false", "--registries.d", registriesDir,
-		"copy", "--sign-by", "personal@example.com", "docker://estesp/busybox:ppc64le", "docker://localhost:5000/myns/extension:extension")
+		"copy", "--sign-by", "personal@example.com", testFQIN+":ppc64le", "docker://localhost:5000/myns/extension:extension")
 	c.Logf("%s", combinedOutputOfCommand(c, "oc", "get", "istag", "extension:extension", "-o", "json"))
 	// Pulling the image using atomic: succeeds.
 	assertSkopeoSucceeds(c, "", "--debug", "--tls-verify=false", "--policy", policy,
@@ -1125,7 +1125,7 @@ func (s *CopySuite) TestCopyVerifyingMirroredSignatures(c *check.C) {
 	// So, make sure to never create a signature that could be considered valid in a different part of the test (i.e. don't reuse tags).
 
 	// Get an image to work with.
-	assertSkopeoSucceeds(c, "", "copy", "--dest-tls-verify=false", "docker://busybox", regPrefix+"primary:unsigned")
+	assertSkopeoSucceeds(c, "", "copy", "--dest-tls-verify=false", testFQIN, regPrefix+"primary:unsigned")
 	// Verify that unsigned images are rejected
 	assertSkopeoFails(c, ".*Source image rejected: A signature was required, but no signature exists.*",
 		"--policy", policy, "--registries.d", registriesDir, "--registries-conf", "fixtures/registries.conf", "copy", "--src-tls-verify=false", regPrefix+"primary:unsigned", dirDest)
@@ -1172,7 +1172,7 @@ func (s *CopySuite) TestCopyVerifyingMirroredSignatures(c *check.C) {
 }
 
 func (s *SkopeoSuite) TestCopySrcWithAuth(c *check.C) {
-	assertSkopeoSucceeds(c, "", "--tls-verify=false", "copy", "--dest-creds=testuser:testpassword", "docker://busybox", fmt.Sprintf("docker://%s/busybox:latest", s.regV2WithAuth.url))
+	assertSkopeoSucceeds(c, "", "--tls-verify=false", "copy", "--dest-creds=testuser:testpassword", testFQIN, fmt.Sprintf("docker://%s/busybox:latest", s.regV2WithAuth.url))
 	dir1, err := ioutil.TempDir("", "copy-1")
 	c.Assert(err, check.IsNil)
 	defer os.RemoveAll(dir1)
@@ -1180,11 +1180,11 @@ func (s *SkopeoSuite) TestCopySrcWithAuth(c *check.C) {
 }
 
 func (s *SkopeoSuite) TestCopyDestWithAuth(c *check.C) {
-	assertSkopeoSucceeds(c, "", "--tls-verify=false", "copy", "--dest-creds=testuser:testpassword", "docker://busybox", fmt.Sprintf("docker://%s/busybox:latest", s.regV2WithAuth.url))
+	assertSkopeoSucceeds(c, "", "--tls-verify=false", "copy", "--dest-creds=testuser:testpassword", testFQIN, fmt.Sprintf("docker://%s/busybox:latest", s.regV2WithAuth.url))
 }
 
 func (s *SkopeoSuite) TestCopySrcAndDestWithAuth(c *check.C) {
-	assertSkopeoSucceeds(c, "", "--tls-verify=false", "copy", "--dest-creds=testuser:testpassword", "docker://busybox", fmt.Sprintf("docker://%s/busybox:latest", s.regV2WithAuth.url))
+	assertSkopeoSucceeds(c, "", "--tls-verify=false", "copy", "--dest-creds=testuser:testpassword", testFQIN, fmt.Sprintf("docker://%s/busybox:latest", s.regV2WithAuth.url))
 	assertSkopeoSucceeds(c, "", "--tls-verify=false", "copy", "--src-creds=testuser:testpassword", "--dest-creds=testuser:testpassword", fmt.Sprintf("docker://%s/busybox:latest", s.regV2WithAuth.url), fmt.Sprintf("docker://%s/test:auth", s.regV2WithAuth.url))
 }
 
@@ -1214,7 +1214,7 @@ func (s *CopySuite) TestCopyManifestConversion(c *check.C) {
 
 	// oci to v2s1 and vice-versa not supported yet
 	// get v2s2 manifest type
-	assertSkopeoSucceeds(c, "", "copy", "docker://busybox", "dir:"+srcDir)
+	assertSkopeoSucceeds(c, "", "copy", testFQIN, "dir:"+srcDir)
 	verifyManifestMIMEType(c, srcDir, manifest.DockerV2Schema2MediaType)
 	// convert from v2s2 to oci
 	assertSkopeoSucceeds(c, "", "copy", "--format=oci", "dir:"+srcDir, "dir:"+destDir1)
@@ -1244,7 +1244,7 @@ func (s *CopySuite) testCopySchemaConversionRegistries(c *check.C, schema1Regist
 
 	// Ensure we are working with a schema2 image.
 	// dir: accepts any manifest format, i.e. this makes …/input2 a schema2 source which cannot be asked to produce schema1 like ordinary docker: registries can.
-	assertSkopeoSucceeds(c, "", "copy", "docker://busybox", "dir:"+input2Dir)
+	assertSkopeoSucceeds(c, "", "copy", testFQIN, "dir:"+input2Dir)
 	verifyManifestMIMEType(c, input2Dir, manifest.DockerV2Schema2MediaType)
 	// 2→2 (the "f2t2" in tag means "from 2 to 2")
 	assertSkopeoSucceeds(c, "", "copy", "--dest-tls-verify=false", "dir:"+input2Dir, schema2Registry+":f2t2")

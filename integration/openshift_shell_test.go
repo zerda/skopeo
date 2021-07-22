@@ -20,7 +20,7 @@ to start a container, then within the container:
 
 An example of what can be done within the container:
 	cd ..; make bin/skopeo PREFIX=/usr install
-	./skopeo --tls-verify=false  copy --sign-by=personal@example.com docker://busybox:latest atomic:localhost:5000/myns/personal:personal
+	./skopeo --tls-verify=false  copy --sign-by=personal@example.com docker://quay.io/libpod/busybox:latest atomic:localhost:5000/myns/personal:personal
 	oc get istag personal:personal -o json
 	curl -L -v 'http://localhost:5000/v2/'
 	cat ~/.docker/config.json
