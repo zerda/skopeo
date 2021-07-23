@@ -39,6 +39,10 @@ Bearer token for accessing the registry.
 
 The number of times to retry. Retry wait time will be exponentially increased based on the number of failed attempts.
 
+**--tls-verify**=_bool_
+
+Require HTTPS and verify certificates when talking to the container registry or daemon (defaults to true)
+
 ## REPOSITORY NAMES
 
 Repository names are transport-specific references as each transport may have its own concept of a "repository" and "tags". Currently, only the Docker transport is supported.

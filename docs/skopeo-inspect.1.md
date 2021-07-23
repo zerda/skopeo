@@ -65,6 +65,10 @@ The number of times to retry; retry wait time will be exponentially increased ba
 
 Directory to use to share blobs across OCI repositories.
 
+**--tls-verify**=_bool_
+
+Require HTTPS and verify certificates when talking to the container registry or daemon (defaults to true)
+
 ## EXAMPLES
 
 To review information for the image fedora from the docker.io registry:

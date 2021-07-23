@@ -19,31 +19,34 @@ import (
 )
 
 type copyOptions struct {
-	global            *globalOptions
-	srcImage          *imageOptions
-	destImage         *imageDestOptions
-	retryOpts         *retry.RetryOptions
-	additionalTags    []string       // For docker-archive: destinations, in addition to the name:tag specified as destination, also add these
-	removeSignatures  bool           // Do not copy signatures from the source image
-	signByFingerprint string         // Sign the image using a GPG key with the specified fingerprint
-	digestFile        string         // Write digest to this file
-	format            optionalString // Force conversion of the image to a specified format
-	quiet             bool           // Suppress output information when copying images
-	all               bool           // Copy all of the images if the source is a list
-	encryptLayer      []int          // The list of layers to encrypt
-	encryptionKeys    []string       // Keys needed to encrypt the image
-	decryptionKeys    []string       // Keys needed to decrypt the image
+	global              *globalOptions
+	deprecatedTLSVerify *deprecatedTLSVerifyOption
+	srcImage            *imageOptions
+	destImage           *imageDestOptions
+	retryOpts           *retry.RetryOptions
+	additionalTags      []string       // For docker-archive: destinations, in addition to the name:tag specified as destination, also add these
+	removeSignatures    bool           // Do not copy signatures from the source image
+	signByFingerprint   string         // Sign the image using a GPG key with the specified fingerprint
+	digestFile          string         // Write digest to this file
+	format              optionalString // Force conversion of the image to a specified format
+	quiet               bool           // Suppress output information when copying images
+	all                 bool           // Copy all of the images if the source is a list
+	encryptLayer        []int          // The list of layers to encrypt
+	encryptionKeys      []string       // Keys needed to encrypt the image
+	decryptionKeys      []string       // Keys needed to decrypt the image
 }
 
 func copyCmd(global *globalOptions) *cobra.Command {
 	sharedFlags, sharedOpts := sharedImageFlags()
-	srcFlags, srcOpts := imageFlags(global, sharedOpts, "src-", "screds")
-	destFlags, destOpts := imageDestFlags(global, sharedOpts, "dest-", "dcreds")
+	deprecatedTLSVerifyFlags, deprecatedTLSVerifyOpt := deprecatedTLSVerifyFlags()
+	srcFlags, srcOpts := imageFlags(global, sharedOpts, deprecatedTLSVerifyOpt, "src-", "screds")
+	destFlags, destOpts := imageDestFlags(global, sharedOpts, deprecatedTLSVerifyOpt, "dest-", "dcreds")
 	retryFlags, retryOpts := retryFlags()
 	opts := copyOptions{global: global,
-		srcImage:  srcOpts,
-		destImage: destOpts,
-		retryOpts: retryOpts,
+		deprecatedTLSVerify: deprecatedTLSVerifyOpt,
+		srcImage:            srcOpts,
+		destImage:           destOpts,
+		retryOpts:           retryOpts,
 	}
 	cmd := &cobra.Command{
 		Use:   "copy [command options] SOURCE-IMAGE DESTINATION-IMAGE",
@@ -61,6 +64,7 @@ See skopeo(1) section "IMAGE NAMES" for the expected format
 	adjustUsage(cmd)
 	flags := cmd.Flags()
 	flags.AddFlagSet(&sharedFlags)
+	flags.AddFlagSet(&deprecatedTLSVerifyFlags)
 	flags.AddFlagSet(&srcFlags)
 	flags.AddFlagSet(&destFlags)
 	flags.AddFlagSet(&retryFlags)
@@ -81,6 +85,7 @@ func (opts *copyOptions) run(args []string, stdout io.Writer) error {
 	if len(args) != 2 {
 		return errorShouldDisplayUsage{errors.New("Exactly two arguments expected")}
 	}
+	opts.deprecatedTLSVerify.warnIfUsed([]string{"--src-tls-verify", "--dest-tls-verify"})
 	imageNames := args
 
 	if err := reexecIfNecessaryForImages(imageNames...); err != nil {
