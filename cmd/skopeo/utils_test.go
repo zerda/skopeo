@@ -80,36 +80,7 @@ func TestImageOptionsNewSystemContext(t *testing.T) {
 		BigFilesTemporaryDir:              "/srv",
 	}, res)
 
-	// Global/per-command tlsVerify behavior
-	for _, c := range []struct {
-		global, cmd          string
-		expectedDocker       types.OptionalBool
-		expectedDockerDaemon bool
-	}{
-		{"", "", types.OptionalBoolUndefined, false},
-		{"", "false", types.OptionalBoolTrue, true},
-		{"", "true", types.OptionalBoolFalse, false},
-		{"false", "", types.OptionalBoolTrue, false},
-		{"false", "false", types.OptionalBoolTrue, true},
-		{"false", "true", types.OptionalBoolFalse, false},
-		{"true", "", types.OptionalBoolFalse, false},
-		{"true", "false", types.OptionalBoolTrue, true},
-		{"true", "true", types.OptionalBoolFalse, false},
-	} {
-		globalFlags := []string{}
-		if c.global != "" {
-			globalFlags = append(globalFlags, "--tls-verify="+c.global)
-		}
-		cmdFlags := []string{}
-		if c.cmd != "" {
-			cmdFlags = append(cmdFlags, "--dest-tls-verify="+c.cmd)
-		}
-		opts := fakeImageOptions(t, "dest-", globalFlags, cmdFlags)
-		res, err = opts.newSystemContext()
-		require.NoError(t, err)
-		assert.Equal(t, c.expectedDocker, res.DockerInsecureSkipTLSVerify, "%#v", c)
-		assert.Equal(t, c.expectedDockerDaemon, res.DockerDaemonInsecureSkipTLSVerify, "%#v", c)
-	}
+	// Global/per-command tlsVerify behavior is tested in TestTLSVerifyFlags.
 
 	// Invalid option values
 	opts = fakeImageOptions(t, "dest-", []string{}, []string{"--dest-creds", ""})
@@ -203,6 +174,38 @@ func TestImageDestOptionsNewSystemContext(t *testing.T) {
 	opts = fakeImageDestOptions(t, "dest-", []string{}, []string{"--dest-creds", ""})
 	_, err = opts.newSystemContext()
 	assert.Error(t, err)
+}
+
+func TestTLSVerifyFlags(t *testing.T) {
+	for _, c := range []struct {
+		global, cmd          string
+		expectedDocker       types.OptionalBool
+		expectedDockerDaemon bool
+	}{
+		{"", "", types.OptionalBoolUndefined, false},
+		{"", "false", types.OptionalBoolTrue, true},
+		{"", "true", types.OptionalBoolFalse, false},
+		{"false", "", types.OptionalBoolTrue, false},
+		{"false", "false", types.OptionalBoolTrue, true},
+		{"false", "true", types.OptionalBoolFalse, false},
+		{"true", "", types.OptionalBoolFalse, false},
+		{"true", "false", types.OptionalBoolTrue, true},
+		{"true", "true", types.OptionalBoolFalse, false},
+	} {
+		globalFlags := []string{}
+		if c.global != "" {
+			globalFlags = append(globalFlags, "--tls-verify="+c.global)
+		}
+		cmdFlags := []string{}
+		if c.cmd != "" {
+			cmdFlags = append(cmdFlags, "--dest-tls-verify="+c.cmd)
+		}
+		opts := fakeImageOptions(t, "dest-", globalFlags, cmdFlags)
+		res, err := opts.newSystemContext()
+		require.NoError(t, err)
+		assert.Equal(t, c.expectedDocker, res.DockerInsecureSkipTLSVerify, "%#v", c)
+		assert.Equal(t, c.expectedDockerDaemon, res.DockerDaemonInsecureSkipTLSVerify, "%#v", c)
+	}
 }
 
 func TestParseManifestFormat(t *testing.T) {
