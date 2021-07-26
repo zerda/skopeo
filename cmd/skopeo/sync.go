@@ -27,17 +27,18 @@ import (
 
 // syncOptions contains information retrieved from the skopeo sync command line.
 type syncOptions struct {
-	global            *globalOptions    // Global (not command dependent) skopeo options
-	srcImage          *imageOptions     // Source image options
-	destImage         *imageDestOptions // Destination image options
-	retryOpts         *retry.RetryOptions
-	removeSignatures  bool           // Do not copy signatures from the source image
-	signByFingerprint string         // Sign the image using a GPG key with the specified fingerprint
-	format            optionalString // Force conversion of the image to a specified format
-	source            string         // Source repository name
-	destination       string         // Destination registry name
-	scoped            bool           // When true, namespace copied images at destination using the source repository name
-	all               bool           // Copy all of the images if an image in the source is a list
+	global              *globalOptions // Global (not command dependent) skopeo options
+	deprecatedTLSVerify *deprecatedTLSVerifyOption
+	srcImage            *imageOptions     // Source image options
+	destImage           *imageDestOptions // Destination image options
+	retryOpts           *retry.RetryOptions
+	removeSignatures    bool           // Do not copy signatures from the source image
+	signByFingerprint   string         // Sign the image using a GPG key with the specified fingerprint
+	format              optionalString // Force conversion of the image to a specified format
+	source              string         // Source repository name
+	destination         string         // Destination registry name
+	scoped              bool           // When true, namespace copied images at destination using the source repository name
+	all                 bool           // Copy all of the images if an image in the source is a list
 }
 
 // repoDescriptor contains information of a single repository used as a sync source.
@@ -68,15 +69,17 @@ type sourceConfig map[string]registrySyncConfig
 
 func syncCmd(global *globalOptions) *cobra.Command {
 	sharedFlags, sharedOpts := sharedImageFlags()
-	srcFlags, srcOpts := dockerImageFlags(global, sharedOpts, "src-", "screds")
-	destFlags, destOpts := dockerImageFlags(global, sharedOpts, "dest-", "dcreds")
+	deprecatedTLSVerifyFlags, deprecatedTLSVerifyOpt := deprecatedTLSVerifyFlags()
+	srcFlags, srcOpts := dockerImageFlags(global, sharedOpts, deprecatedTLSVerifyOpt, "src-", "screds")
+	destFlags, destOpts := dockerImageFlags(global, sharedOpts, deprecatedTLSVerifyOpt, "dest-", "dcreds")
 	retryFlags, retryOpts := retryFlags()
 
 	opts := syncOptions{
-		global:    global,
-		srcImage:  srcOpts,
-		destImage: &imageDestOptions{imageOptions: destOpts},
-		retryOpts: retryOpts,
+		global:              global,
+		deprecatedTLSVerify: deprecatedTLSVerifyOpt,
+		srcImage:            srcOpts,
+		destImage:           &imageDestOptions{imageOptions: destOpts},
+		retryOpts:           retryOpts,
 	}
 
 	cmd := &cobra.Command{
@@ -102,6 +105,7 @@ See skopeo-sync(1) for details.
 	flags.BoolVar(&opts.scoped, "scoped", false, "Images at DESTINATION are prefix using the full source image path as scope")
 	flags.BoolVarP(&opts.all, "all", "a", false, "Copy all images if SOURCE-IMAGE is a list")
 	flags.AddFlagSet(&sharedFlags)
+	flags.AddFlagSet(&deprecatedTLSVerifyFlags)
 	flags.AddFlagSet(&srcFlags)
 	flags.AddFlagSet(&destFlags)
 	flags.AddFlagSet(&retryFlags)
@@ -492,6 +496,7 @@ func (opts *syncOptions) run(args []string, stdout io.Writer) error {
 	if len(args) != 2 {
 		return errorShouldDisplayUsage{errors.New("Exactly two arguments expected")}
 	}
+	opts.deprecatedTLSVerify.warnIfUsed([]string{"--src-tls-verify", "--dest-tls-verify"})
 
 	policyContext, err := opts.global.getPolicyContext()
 	if err != nil {

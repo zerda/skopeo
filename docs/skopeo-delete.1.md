@@ -60,6 +60,10 @@ The number of times to retry. Retry wait time will be exponentially increased ba
 
 Directory to use to share blobs across OCI repositories.
 
+**--tls-verify**=_bool_
+
+Require HTTPS and verify certificates when talking to the container registry or daemon (defaults to true)
+
 ## EXAMPLES
 
 Mark image example/pause for deletion from the registry.example.com registry:

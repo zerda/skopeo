@@ -29,6 +29,10 @@ Remove the cached credentials for all registries in the auth file
 
 Print usage statement
 
+**--tls-verify**=_bool_
+
+Require HTTPS and verify certificates when talking to the container registry or daemon (defaults to true)
+
 ## EXAMPLES
 
 ```
