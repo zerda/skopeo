@@ -133,8 +133,8 @@ When new PRs for [containers/image](https://github.com/containers/image) break `
 
 - create out a new branch in your `skopeo` checkout and switch to it
 - find out the version of `containers/image` you want to use and note its commit ID. You might also want to use a fork of `containers/image`, in that case note its repo
-- use `go get -d github.com/$REPO/image@$COMMIT_ID` to download the right version. The command will fetch the dependency and then fail because of a conflict in `go.mod`, this is expected. Note the pseudo-version (eg. `v5.13.1-0.20210707123201-50afbf0a326`)
-- use `go mod edit -replace=github.com/containers/image=github.com/$REPO/image@$PSEUDO_VERSION` to add a replacement line to `go.mod` (e.g. `replace github.com/containers/image/v5 => github.com/moio/image/v5 v5.13.1-0.20210707123201-50afbf0a3262`)
+- use `go get -d github.com/$REPO/image/v5@$COMMIT_ID` to download the right version. The command will fetch the dependency and then fail because of a conflict in `go.mod`, this is expected. Note the pseudo-version (eg. `v5.13.1-0.20210707123201-50afbf0a326`)
+- use `go mod edit -replace=github.com/containers/image/v5=github.com/$REPO/image/v5@$PSEUDO_VERSION` to add a replacement line to `go.mod` (e.g. `replace github.com/containers/image/v5 => github.com/moio/image/v5 v5.13.1-0.20210707123201-50afbf0a3262`)
 - run `make vendor`
 - make any other necessary changes in the skopeo repo (e.g. add other dependencies now required by `containers/image`, or update skopeo for changed `containers/image` API)
 - optionally add new integration tests to the skopeo repo
