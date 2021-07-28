@@ -568,6 +568,7 @@ func (s *CopySuite) TestCopyEncryption(c *check.C) {
 	c.Assert(err, check.IsNil)
 	defer os.RemoveAll(keysDir)
 	undecryptedImgDir, err := ioutil.TempDir("", "copy-5")
+	c.Assert(err, check.IsNil)
 	defer os.RemoveAll(undecryptedImgDir)
 	multiLayerImageDir, err := ioutil.TempDir("", "copy-6")
 	c.Assert(err, check.IsNil)
