@@ -62,6 +62,7 @@ func (cluster *openshiftCluster) startMaster(c *check.C) {
 	cmd := cluster.clusterCmd(nil, "openshift", "start", "master")
 	cluster.processes = append(cluster.processes, cmd)
 	stdout, err := cmd.StdoutPipe()
+	c.Assert(err, check.IsNil)
 	// Send both to the same pipe. This might cause the two streams to be mixed up,
 	// but logging actually goes only to stderr - this primarily ensure we log any
 	// unexpected output to stdout.
