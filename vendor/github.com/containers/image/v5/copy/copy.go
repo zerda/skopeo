@@ -20,6 +20,7 @@ import (
 	"github.com/containers/image/v5/manifest"
 	"github.com/containers/image/v5/pkg/blobinfocache"
 	"github.com/containers/image/v5/pkg/compression"
+	compressiontypes "github.com/containers/image/v5/pkg/compression/types"
 	"github.com/containers/image/v5/signature"
 	"github.com/containers/image/v5/transports"
 	"github.com/containers/image/v5/types"
@@ -57,7 +58,7 @@ var compressionBufferSize = 1048576
 
 // expectedCompressionFormats is used to check if a blob with a specified media type is compressed
 // using the algorithm that the media type says it should be compressed with
-var expectedCompressionFormats = map[string]*compression.Algorithm{
+var expectedCompressionFormats = map[string]*compressiontypes.Algorithm{
 	imgspecv1.MediaTypeImageLayerGzip:      &compression.Gzip,
 	imgspecv1.MediaTypeImageLayerZstd:      &compression.Zstd,
 	manifest.DockerV2Schema2LayerMediaType: &compression.Gzip,
@@ -117,12 +118,13 @@ type copier struct {
 	progress              chan types.ProgressProperties
 	blobInfoCache         internalblobinfocache.BlobInfoCache2
 	copyInParallel        bool
-	compressionFormat     compression.Algorithm
+	compressionFormat     compressiontypes.Algorithm
 	compressionLevel      *int
 	ociDecryptConfig      *encconfig.DecryptConfig
 	ociEncryptConfig      *encconfig.EncryptConfig
 	maxParallelDownloads  uint
 	downloadForeignLayers bool
+	fetchPartialBlobs     bool
 }
 
 // imageCopier tracks state specific to a single image (possibly an item of a manifest list)
@@ -194,15 +196,21 @@ type Options struct {
 	// OciDecryptConfig contains the config that can be used to decrypt an image if it is
 	// encrypted if non-nil. If nil, it does not attempt to decrypt an image.
 	OciDecryptConfig *encconfig.DecryptConfig
+
 	// MaxParallelDownloads indicates the maximum layers to pull at the same time.  A reasonable default is used if this is left as 0.
 	MaxParallelDownloads uint
+
 	// When OptimizeDestinationImageAlreadyExists is set, optimize the copy assuming that the destination image already
 	// exists (and is equivalent). Making the eventual (no-op) copy more performant for this case. Enabling the option
 	// is slightly pessimistic if the destination image doesn't exist, or is not equivalent.
 	OptimizeDestinationImageAlreadyExists bool
+
 	// Download layer contents with "nondistributable" media types ("foreign" layers) and translate the layer media type
 	// to not indicate "nondistributable".
 	DownloadForeignLayers bool
+
+	// FetchPartialBlobs indicates whether to attempt to fetch the blob partially.  Experimental.
+	FetchPartialBlobs bool
 }
 
 // validateImageListSelection returns an error if the passed-in value is not one that we recognize as a valid ImageListSelection value
@@ -283,14 +291,11 @@ func Image(ctx context.Context, policyContext *signature.PolicyContext, destRef,
 		ociEncryptConfig:      options.OciEncryptConfig,
 		maxParallelDownloads:  options.MaxParallelDownloads,
 		downloadForeignLayers: options.DownloadForeignLayers,
+		fetchPartialBlobs:     options.FetchPartialBlobs,
 	}
 	// Default to using gzip compression unless specified otherwise.
 	if options.DestinationCtx == nil || options.DestinationCtx.CompressionFormat == nil {
-		algo, err := compression.AlgorithmByName("gzip")
-		if err != nil {
-			return nil, err
-		}
-		c.compressionFormat = algo
+		c.compressionFormat = compression.Gzip
 	} else {
 		c.compressionFormat = *options.DestinationCtx.CompressionFormat
 	}
@@ -1072,9 +1077,25 @@ func (c *copier) newProgressPool(ctx context.Context) (*mpb.Progress, func()) {
 	}
 }
 
+// customPartialBlobCounter provides a decorator function for the partial blobs retrieval progress bar
+func customPartialBlobCounter(filler interface{}, wcc ...decor.WC) decor.Decorator {
+	producer := func(filler interface{}) decor.DecorFunc {
+		return func(s decor.Statistics) string {
+			if s.Total == 0 {
+				pairFmt := "%.1f / %.1f (skipped: %.1f)"
+				return fmt.Sprintf(pairFmt, decor.SizeB1024(s.Current), decor.SizeB1024(s.Total), decor.SizeB1024(s.Refill))
+			}
+			pairFmt := "%.1f / %.1f (skipped: %.1f = %.2f%%)"
+			percentage := 100.0 * float64(s.Refill) / float64(s.Total)
+			return fmt.Sprintf(pairFmt, decor.SizeB1024(s.Current), decor.SizeB1024(s.Total), decor.SizeB1024(s.Refill), percentage)
+		}
+	}
+	return decor.Any(producer(filler), wcc...)
+}
+
 // createProgressBar creates a mpb.Bar in pool.  Note that if the copier's reportWriter
 // is ioutil.Discard, the progress bar's output will be discarded
-func (c *copier) createProgressBar(pool *mpb.Progress, info types.BlobInfo, kind string, onComplete string) *mpb.Bar {
+func (c *copier) createProgressBar(pool *mpb.Progress, partial bool, info types.BlobInfo, kind string, onComplete string) *mpb.Bar {
 	// shortDigestLen is the length of the digest used for blobs.
 	const shortDigestLen = 12
 
@@ -1091,18 +1112,30 @@ func (c *copier) createProgressBar(pool *mpb.Progress, info types.BlobInfo, kind
 	// Use a normal progress bar when we know the size (i.e., size > 0).
 	// Otherwise, use a spinner to indicate that something's happening.
 	var bar *mpb.Bar
+	sstyle := mpb.SpinnerStyle(".", "..", "...", "....", "").PositionLeft()
 	if info.Size > 0 {
-		bar = pool.AddBar(info.Size,
-			mpb.BarFillerClearOnComplete(),
-			mpb.PrependDecorators(
-				decor.OnComplete(decor.Name(prefix), onComplete),
-			),
-			mpb.AppendDecorators(
-				decor.OnComplete(decor.CountersKibiByte("%.1f / %.1f"), ""),
-			),
-		)
+		if partial {
+			bar = pool.AddBar(info.Size,
+				mpb.BarFillerClearOnComplete(),
+				mpb.PrependDecorators(
+					decor.OnComplete(decor.Name(prefix), onComplete),
+				),
+				mpb.AppendDecorators(
+					customPartialBlobCounter(sstyle.Build()),
+				),
+			)
+		} else {
+			bar = pool.AddBar(info.Size,
+				mpb.BarFillerClearOnComplete(),
+				mpb.PrependDecorators(
+					decor.OnComplete(decor.Name(prefix), onComplete),
+				),
+				mpb.AppendDecorators(
+					decor.OnComplete(decor.CountersKibiByte("%.1f / %.1f"), ""),
+				),
+			)
+		}
 	} else {
-		sstyle := mpb.SpinnerStyle(".", "..", "...", "....", "").PositionLeft()
 		bar = pool.Add(0,
 			sstyle.Build(),
 			mpb.BarFillerClearOnComplete(),
@@ -1129,7 +1162,7 @@ func (c *copier) copyConfig(ctx context.Context, src types.Image) error {
 		destInfo, err := func() (types.BlobInfo, error) { // A scope for defer
 			progressPool, progressCleanup := c.newProgressPool(ctx)
 			defer progressCleanup()
-			bar := c.createProgressBar(progressPool, srcInfo, "config", "done")
+			bar := c.createProgressBar(progressPool, false, srcInfo, "config", "done")
 			destInfo, err := c.copyBlobFromStream(ctx, bytes.NewReader(configBlob), srcInfo, nil, false, true, false, bar, -1, false)
 			if err != nil {
 				return types.BlobInfo{}, err
@@ -1217,7 +1250,7 @@ func (ic *imageCopier) copyLayer(ctx context.Context, srcInfo types.BlobInfo, to
 		}
 		if reused {
 			logrus.Debugf("Skipping blob %s (already present):", srcInfo.Digest)
-			bar := ic.c.createProgressBar(pool, srcInfo, "blob", "skipped: already exists")
+			bar := ic.c.createProgressBar(pool, false, srcInfo, "blob", "skipped: already exists")
 			bar.SetTotal(0, true)
 
 			// Throw an event that the layer has been skipped
@@ -1244,6 +1277,49 @@ func (ic *imageCopier) copyLayer(ctx context.Context, srcInfo types.BlobInfo, to
 		}
 	}
 
+	// A partial pull is managed by the destination storage, that decides what portions
+	// of the source file are not known yet and must be fetched.
+	// Attempt a partial only when the source allows to retrieve a blob partially and
+	// the destination has support for it.
+	imgSource, okSource := ic.c.rawSource.(internalTypes.ImageSourceSeekable)
+	imgDest, okDest := ic.c.dest.(internalTypes.ImageDestinationPartial)
+	if ic.c.fetchPartialBlobs && okSource && okDest && !diffIDIsNeeded {
+		bar := ic.c.createProgressBar(pool, true, srcInfo, "blob", "done")
+
+		progress := make(chan int64)
+		terminate := make(chan interface{})
+
+		defer close(terminate)
+		defer close(progress)
+
+		proxy := imageSourceSeekableProxy{
+			source:   imgSource,
+			progress: progress,
+		}
+		go func() {
+			for {
+				select {
+				case written := <-progress:
+					bar.IncrInt64(written)
+				case <-terminate:
+					return
+				}
+			}
+		}()
+
+		bar.SetTotal(srcInfo.Size, false)
+		info, err := imgDest.PutBlobPartial(ctx, proxy, srcInfo, ic.c.blobInfoCache)
+		if err == nil {
+			bar.SetRefill(srcInfo.Size - bar.Current())
+			bar.SetCurrent(srcInfo.Size)
+			bar.SetTotal(srcInfo.Size, true)
+			logrus.Debugf("Retrieved partial blob %v", srcInfo.Digest)
+			return info, cachedDiffID, nil
+		}
+		bar.Abort(true)
+		logrus.Errorf("Failed to retrieve partial blob: %v", err)
+	}
+
 	// Fallback: copy the layer, computing the diffID if we need to do so
 	srcStream, srcBlobSize, err := ic.c.rawSource.GetBlob(ctx, srcInfo, ic.c.blobInfoCache)
 	if err != nil {
@@ -1251,7 +1327,7 @@ func (ic *imageCopier) copyLayer(ctx context.Context, srcInfo types.BlobInfo, to
 	}
 	defer srcStream.Close()
 
-	bar := ic.c.createProgressBar(pool, srcInfo, "blob", "done")
+	bar := ic.c.createProgressBar(pool, false, srcInfo, "blob", "done")
 
 	blobInfo, diffIDChan, err := ic.copyLayerFromStream(ctx, srcStream, types.BlobInfo{Digest: srcInfo.Digest, Size: srcBlobSize, MediaType: srcInfo.MediaType, Annotations: srcInfo.Annotations}, diffIDIsNeeded, toEncrypt, bar, layerIndex, emptyLayer)
 	if err != nil {
@@ -1285,7 +1361,7 @@ func (ic *imageCopier) copyLayer(ctx context.Context, srcInfo types.BlobInfo, to
 // and returns a complete blobInfo of the copied blob and perhaps a <-chan diffIDResult if diffIDIsNeeded, to be read by the caller.
 func (ic *imageCopier) copyLayerFromStream(ctx context.Context, srcStream io.Reader, srcInfo types.BlobInfo,
 	diffIDIsNeeded bool, toEncrypt bool, bar *mpb.Bar, layerIndex int, emptyLayer bool) (types.BlobInfo, <-chan diffIDResult, error) {
-	var getDiffIDRecorder func(compression.DecompressorFunc) io.Writer // = nil
+	var getDiffIDRecorder func(compressiontypes.DecompressorFunc) io.Writer // = nil
 	var diffIDChan chan diffIDResult
 
 	err := errors.New("Internal error: unexpected panic in copyLayer") // For pipeWriter.CloseWithbelow
@@ -1296,7 +1372,7 @@ func (ic *imageCopier) copyLayerFromStream(ctx context.Context, srcStream io.Rea
 			_ = pipeWriter.CloseWithError(err) // CloseWithError(nil) is equivalent to Close(), always returns nil
 		}()
 
-		getDiffIDRecorder = func(decompressor compression.DecompressorFunc) io.Writer {
+		getDiffIDRecorder = func(decompressor compressiontypes.DecompressorFunc) io.Writer {
 			// If this fails, e.g. because we have exited and due to pipeWriter.CloseWithError() above further
 			// reading from the pipe has failed, we don’t really care.
 			// We only read from diffIDChan if the rest of the flow has succeeded, and when we do read from it,
@@ -1315,7 +1391,7 @@ func (ic *imageCopier) copyLayerFromStream(ctx context.Context, srcStream io.Rea
 }
 
 // diffIDComputationGoroutine reads all input from layerStream, uncompresses using decompressor if necessary, and sends its digest, and status, if any, to dest.
-func diffIDComputationGoroutine(dest chan<- diffIDResult, layerStream io.ReadCloser, decompressor compression.DecompressorFunc) {
+func diffIDComputationGoroutine(dest chan<- diffIDResult, layerStream io.ReadCloser, decompressor compressiontypes.DecompressorFunc) {
 	result := diffIDResult{
 		digest: "",
 		err:    errors.New("Internal error: unexpected panic in diffIDComputationGoroutine"),
@@ -1327,7 +1403,7 @@ func diffIDComputationGoroutine(dest chan<- diffIDResult, layerStream io.ReadClo
 }
 
 // computeDiffID reads all input from layerStream, uncompresses it using decompressor if necessary, and returns its digest.
-func computeDiffID(stream io.Reader, decompressor compression.DecompressorFunc) (digest.Digest, error) {
+func computeDiffID(stream io.Reader, decompressor compressiontypes.DecompressorFunc) (digest.Digest, error) {
 	if decompressor != nil {
 		s, err := decompressor(stream)
 		if err != nil {
@@ -1360,7 +1436,7 @@ func (r errorAnnotationReader) Read(b []byte) (n int, err error) {
 // perhaps (de/re/)compressing it if canModifyBlob,
 // and returns a complete blobInfo of the copied blob.
 func (c *copier) copyBlobFromStream(ctx context.Context, srcStream io.Reader, srcInfo types.BlobInfo,
-	getOriginalLayerCopyWriter func(decompressor compression.DecompressorFunc) io.Writer,
+	getOriginalLayerCopyWriter func(decompressor compressiontypes.DecompressorFunc) io.Writer,
 	canModifyBlob bool, isConfig bool, toEncrypt bool, bar *mpb.Bar, layerIndex int, emptyLayer bool) (types.BlobInfo, error) {
 	if isConfig { // This is guaranteed by the caller, but set it here to be explicit.
 		canModifyBlob = false
@@ -1425,6 +1501,7 @@ func (c *copier) copyBlobFromStream(ctx context.Context, srcStream io.Reader, sr
 		originalLayerReader = destStream
 	}
 
+	compressionMetadata := map[string]string{}
 	// === Deal with layer compression/decompression if necessary
 	// WARNING: If you are adding new reasons to change the blob, update also the OptimizeDestinationImageAlreadyExists
 	// short-circuit conditions
@@ -1453,7 +1530,7 @@ func (c *copier) copyBlobFromStream(ctx context.Context, srcStream io.Reader, sr
 		// If this fails while writing data, it will do pipeWriter.CloseWithError(); if it fails otherwise,
 		// e.g. because we have exited and due to pipeReader.Close() above further writing to the pipe has failed,
 		// we don’t care.
-		go c.compressGoroutine(pipeWriter, destStream, *uploadCompressionFormat) // Closes pipeWriter
+		go c.compressGoroutine(pipeWriter, destStream, compressionMetadata, *uploadCompressionFormat) // Closes pipeWriter
 		destStream = pipeReader
 		inputInfo.Digest = ""
 		inputInfo.Size = -1
@@ -1473,7 +1550,7 @@ func (c *copier) copyBlobFromStream(ctx context.Context, srcStream io.Reader, sr
 		pipeReader, pipeWriter := io.Pipe()
 		defer pipeReader.Close()
 
-		go c.compressGoroutine(pipeWriter, s, *uploadCompressionFormat) // Closes pipeWriter
+		go c.compressGoroutine(pipeWriter, s, compressionMetadata, *uploadCompressionFormat) // Closes pipeWriter
 
 		destStream = pipeReader
 		inputInfo.Digest = ""
@@ -1640,23 +1717,42 @@ func (c *copier) copyBlobFromStream(ctx context.Context, srcStream io.Reader, sr
 			c.blobInfoCache.RecordDigestCompressorName(srcInfo.Digest, srcCompressorName)
 		}
 	}
+
+	// Copy all the metadata generated by the compressor into the annotations.
+	if uploadedInfo.Annotations == nil {
+		uploadedInfo.Annotations = map[string]string{}
+	}
+	for k, v := range compressionMetadata {
+		uploadedInfo.Annotations[k] = v
+	}
+
 	return uploadedInfo, nil
 }
 
+// doCompression reads all input from src and writes its compressed equivalent to dest.
+func doCompression(dest io.Writer, src io.Reader, metadata map[string]string, compressionFormat compressiontypes.Algorithm, compressionLevel *int) error {
+	compressor, err := compression.CompressStreamWithMetadata(dest, metadata, compressionFormat, compressionLevel)
+	if err != nil {
+		return err
+	}
+
+	buf := make([]byte, compressionBufferSize)
+
+	_, err = io.CopyBuffer(compressor, src, buf) // Sets err to nil, i.e. causes dest.Close()
+	if err != nil {
+		compressor.Close()
+		return err
+	}
+
+	return compressor.Close()
+}
+
 // compressGoroutine reads all input from src and writes its compressed equivalent to dest.
-func (c *copier) compressGoroutine(dest *io.PipeWriter, src io.Reader, compressionFormat compression.Algorithm) {
+func (c *copier) compressGoroutine(dest *io.PipeWriter, src io.Reader, metadata map[string]string, compressionFormat compressiontypes.Algorithm) {
 	err := errors.New("Internal error: unexpected panic in compressGoroutine")
 	defer func() { // Note that this is not the same as {defer dest.CloseWithError(err)}; we need err to be evaluated lazily.
 		_ = dest.CloseWithError(err) // CloseWithError(nil) is equivalent to Close(), always returns nil
 	}()
 
-	compressor, err := compression.CompressStream(dest, compressionFormat, c.compressionLevel)
-	if err != nil {
-		return
-	}
-	defer compressor.Close()
-
-	buf := make([]byte, compressionBufferSize)
-
-	_, err = io.CopyBuffer(compressor, src, buf) // Sets err to nil, i.e. causes dest.Close()
+	err = doCompression(dest, src, metadata, compressionFormat, c.compressionLevel)
 }

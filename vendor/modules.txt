@@ -50,7 +50,7 @@ github.com/containers/common/pkg/completion
 github.com/containers/common/pkg/report
 github.com/containers/common/pkg/report/camelcase
 github.com/containers/common/pkg/retry
-# github.com/containers/image/v5 v5.13.3-0.20210701090127-1f79791095ef
+# github.com/containers/image/v5 v5.14.1-0.20210728095305-9e1d7b48f1de
 github.com/containers/image/v5/copy
 github.com/containers/image/v5/directory
 github.com/containers/image/v5/directory/explicitfilepath
@@ -129,6 +129,9 @@ github.com/containers/storage/drivers/windows
 github.com/containers/storage/drivers/zfs
 github.com/containers/storage/pkg/archive
 github.com/containers/storage/pkg/chrootarchive
+github.com/containers/storage/pkg/chunked
+github.com/containers/storage/pkg/chunked/compressor
+github.com/containers/storage/pkg/chunked/internal
 github.com/containers/storage/pkg/config
 github.com/containers/storage/pkg/devicemapper
 github.com/containers/storage/pkg/directory

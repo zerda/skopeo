@@ -98,6 +98,10 @@ Credentials for accessing the source registry.
 
 Compress tarball image layers when saving to directory using the 'dir' transport. (default is same compression type as source).
 
+**--dest-decompress** _bool-value_
+
+Decompress tarball image layers when saving to directory using the 'dir' transport. (default is same compression type as source).
+
 **--dest-oci-accept-uncompressed-layers** _bool-value_
 
 Allow uncompressed image layers when saving to an OCI image using the 'oci' transport. (default is to compress things that aren't compressed).
