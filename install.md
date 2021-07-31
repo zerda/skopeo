@@ -146,7 +146,7 @@ sudo dnf install gpgme-devel libassuan-devel btrfs-progs-devel device-mapper-dev
 
 ```bash
 # Ubuntu (`libbtrfs-dev` requires Ubuntu 18.10 and above):
-sudo apt install libgpgme-dev libassuan-dev libbtrfs-dev libdevmapper-dev
+sudo apt install libgpgme-dev libassuan-dev libbtrfs-dev libdevmapper-dev pkg-config
 ```
 
 ```bash
