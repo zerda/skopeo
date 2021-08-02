@@ -34,6 +34,7 @@ func logoutCmd(global *globalOptions) *cobra.Command {
 
 func (opts *logoutOptions) run(args []string, stdout io.Writer) error {
 	opts.logoutOpts.Stdout = stdout
+	opts.logoutOpts.AcceptRepositories = true
 	sys := opts.global.newSystemContext()
 	if opts.tlsVerify.present {
 		sys.DockerInsecureSkipTLSVerify = types.NewOptionalBool(!opts.tlsVerify.value)
