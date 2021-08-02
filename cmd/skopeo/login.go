@@ -38,6 +38,7 @@ func (opts *loginOptions) run(args []string, stdout io.Writer) error {
 	defer cancel()
 	opts.loginOpts.Stdout = stdout
 	opts.loginOpts.Stdin = os.Stdin
+	opts.loginOpts.AcceptRepositories = true
 	sys := opts.global.newSystemContext()
 	if opts.tlsVerify.present {
 		sys.DockerInsecureSkipTLSVerify = types.NewOptionalBool(!opts.tlsVerify.value)
