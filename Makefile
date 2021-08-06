@@ -98,7 +98,8 @@ MANPAGES ?= $(MANPAGES_MD:%.md=%)
 
 BTRFS_BUILD_TAG = $(shell hack/btrfs_tag.sh) $(shell hack/btrfs_installed_tag.sh)
 LIBDM_BUILD_TAG = $(shell hack/libdm_tag.sh)
-LOCAL_BUILD_TAGS = $(BTRFS_BUILD_TAG) $(LIBDM_BUILD_TAG)
+LIBSUBID_BUILD_TAG = $(shell hack/libsubid_tag.sh)
+LOCAL_BUILD_TAGS = $(BTRFS_BUILD_TAG) $(LIBDM_BUILD_TAG) $(LIBSUBID_BUILD_TAG)
 BUILDTAGS += $(LOCAL_BUILD_TAGS)
 
 ifeq ($(DISABLE_CGO), 1)
@@ -227,7 +228,7 @@ test-all-local: validate-local validate-docs test-unit-local
 
 .PHONY: validate-local
 validate-local:
-	hack/make.sh validate-git-marks validate-gofmt validate-lint validate-vet
+	BUILDTAGS="${BUILDTAGS}" hack/make.sh validate-git-marks validate-gofmt validate-lint validate-vet
 
 # This invokes bin/skopeo, hence cannot be run as part of validate-local
 .PHONY: validate-docs
