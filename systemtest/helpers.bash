@@ -359,6 +359,7 @@ start_registry() {
         timeout=$(expr $timeout - 1)
         sleep 1
     done
+    log_and_run $PODMAN logs $name
     die "Timed out waiting for registry container to respond on :$port"
 }
 
