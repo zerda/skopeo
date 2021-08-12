@@ -2,7 +2,7 @@
 
 export GOPROXY=https://proxy.golang.org
 
-# On some plaforms (eg. macOS, FreeBSD) gpgme is installed in /usr/local/ but /usr/local/include/ is
+# On some platforms (eg. macOS, FreeBSD) gpgme is installed in /usr/local/ but /usr/local/include/ is
 # not in the default search path. Rather than hard-code this directory, use gpgme-config.
 # Sadly that must be done at the top-level user instead of locally in the gpgme subpackage, because cgo
 # supports only pkg-config, not general shell scripts, and gpgme does not install a pkg-config file.
