@@ -14,8 +14,8 @@ import (
 	"github.com/containers/image/v5/docker/reference"
 	"github.com/containers/image/v5/manifest"
 	"github.com/containers/image/v5/types"
-	"github.com/go-check/check"
 	imgspecv1 "github.com/opencontainers/image-spec/specs-go/v1"
+	"gopkg.in/check.v1"
 )
 
 const (

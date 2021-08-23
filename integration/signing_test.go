@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/containers/image/v5/signature"
-	"github.com/go-check/check"
+	"gopkg.in/check.v1"
 )
 
 const (

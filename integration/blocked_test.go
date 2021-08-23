@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/go-check/check"
+	"gopkg.in/check.v1"
 )
 
 const blockedRegistriesConf = "./fixtures/blocked-registries.conf"

@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/containers/skopeo/version"
-	"github.com/go-check/check"
+	"gopkg.in/check.v1"
 )
 
 const (
