@@ -6,7 +6,7 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/go-check/check"
+	"gopkg.in/check.v1"
 )
 
 /*

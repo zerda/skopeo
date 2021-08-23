@@ -29,26 +29,17 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	"github.com/opencontainers/image-spec/schema"
 	"github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
-type manifest struct {
-	Config v1.Descriptor   `json:"config"`
-	Layers []v1.Descriptor `json:"layers"`
-}
-
-func findManifest(w walker, d *v1.Descriptor) (*manifest, error) {
-	var m manifest
+func findManifest(w walker, d *v1.Descriptor) (*v1.Manifest, error) {
+	var m v1.Manifest
 	mpath := filepath.Join("blobs", string(d.Digest.Algorithm()), d.Digest.Hex())
 
-	switch err := w.walk(func(path string, info os.FileInfo, r io.Reader) error {
-		if info.IsDir() || filepath.Clean(path) != mpath {
-			return nil
-		}
-
+	switch err := w.find(mpath, func(path string, r io.Reader) error {
 		buf, err := ioutil.ReadAll(r)
 		if err != nil {
 			return errors.Wrapf(err, "%s: error reading manifest", path)
@@ -73,7 +64,7 @@ func findManifest(w walker, d *v1.Descriptor) (*manifest, error) {
 	}
 }
 
-func (m *manifest) validate(w walker) error {
+func validateManifest(m *v1.Manifest, w walker) error {
 	if err := validateDescriptor(&m.Config, w, []string{v1.MediaTypeImageConfig}); err != nil {
 		return errors.Wrap(err, "config validation failed")
 	}
@@ -94,7 +85,7 @@ func (m *manifest) validate(w walker) error {
 	return nil
 }
 
-func (m *manifest) unpack(w walker, dest string) (retErr error) {
+func unpackManifest(m *v1.Manifest, w walker, dest string) (retErr error) {
 	// error out if the dest directory is not empty
 	s, err := ioutil.ReadDir(dest)
 	if err != nil && !os.IsNotExist(err) { // We'll create the dir later
@@ -113,18 +104,10 @@ func (m *manifest) unpack(w walker, dest string) (retErr error) {
 		}
 	}()
 	for _, d := range m.Layers {
-		switch err := w.walk(func(path string, info os.FileInfo, r io.Reader) error {
-			if info.IsDir() {
-				return nil
-			}
-
-			dd, err := filepath.Rel(filepath.Join("blobs", string(d.Digest.Algorithm())), filepath.Clean(path))
-			if err != nil || d.Digest.Hex() != dd {
-				return nil
-			}
-
+		lpath := filepath.Join("blobs", string(d.Digest.Algorithm()), d.Digest.Hex())
+		switch err := w.find(lpath, func(path string, r io.Reader) error {
 			if err := unpackLayer(d.MediaType, path, dest, r); err != nil {
-				return errors.Wrap(err, "error unpack: extracting layer")
+				return errors.Wrap(err, "unpack: error extracting layer")
 			}
 
 			return errEOW
@@ -218,85 +201,15 @@ loop:
 			return errors.Wrapf(err, "error advancing tar stream")
 		}
 
-		hdr.Name = filepath.Clean(hdr.Name)
-		if !strings.HasSuffix(hdr.Name, string(os.PathSeparator)) {
-			// Not the root directory, ensure that the parent directory exists
-			parent := filepath.Dir(hdr.Name)
-			parentPath := filepath.Join(dest, parent)
-			if _, err2 := os.Lstat(parentPath); err2 != nil && os.IsNotExist(err2) {
-				if err3 := os.MkdirAll(parentPath, 0755); err3 != nil {
-					return err3
-				}
-			}
-		}
-		path := filepath.Join(dest, hdr.Name)
-		if entries[path] {
-			return fmt.Errorf("duplicate entry for %s", path)
-		}
-		entries[path] = true
-		rel, err := filepath.Rel(dest, path)
+		var whiteout bool
+		whiteout, err = unpackLayerEntry(dest, hdr, tr, &entries)
 		if err != nil {
 			return err
 		}
-		info := hdr.FileInfo()
-		if strings.HasPrefix(rel, ".."+string(os.PathSeparator)) {
-			return fmt.Errorf("%q is outside of %q", hdr.Name, dest)
-		}
-
-		if strings.HasPrefix(info.Name(), ".wh.") {
-			path = strings.Replace(path, ".wh.", "", 1)
-
-			if err := os.RemoveAll(path); err != nil {
-				return errors.Wrap(err, "unable to delete whiteout path")
-			}
-
+		if whiteout {
 			continue loop
 		}
 
-		switch hdr.Typeflag {
-		case tar.TypeDir:
-			if fi, err := os.Lstat(path); !(err == nil && fi.IsDir()) {
-				if err2 := os.MkdirAll(path, info.Mode()); err2 != nil {
-					return errors.Wrap(err2, "error creating directory")
-				}
-			}
-
-		case tar.TypeReg, tar.TypeRegA:
-			f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY, info.Mode())
-			if err != nil {
-				return errors.Wrap(err, "unable to open file")
-			}
-
-			if _, err := io.Copy(f, tr); err != nil {
-				f.Close()
-				return errors.Wrap(err, "unable to copy")
-			}
-			f.Close()
-
-		case tar.TypeLink:
-			target := filepath.Join(dest, hdr.Linkname)
-
-			if !strings.HasPrefix(target, dest) {
-				return fmt.Errorf("invalid hardlink %q -> %q", target, hdr.Linkname)
-			}
-
-			if err := os.Link(target, path); err != nil {
-				return err
-			}
-
-		case tar.TypeSymlink:
-			target := filepath.Join(filepath.Dir(path), hdr.Linkname)
-
-			if !strings.HasPrefix(target, dest) {
-				return fmt.Errorf("invalid symlink %q -> %q", path, hdr.Linkname)
-			}
-
-			if err := os.Symlink(hdr.Linkname, path); err != nil {
-				return err
-			}
-		case tar.TypeXGlobalHeader:
-			return nil
-		}
 		// Directory mtimes must be handled at the end to avoid further
 		// file creation in them to modify the directory mtime
 		if hdr.Typeflag == tar.TypeDir {
@@ -314,4 +227,105 @@ loop:
 		}
 	}
 	return nil
+}
+
+// unpackLayerEntry unpacks a single entry from a layer.
+func unpackLayerEntry(dest string, header *tar.Header, reader io.Reader, entries *map[string]bool) (whiteout bool, err error) {
+	header.Name = filepath.Clean(header.Name)
+	if !strings.HasSuffix(header.Name, string(os.PathSeparator)) {
+		// Not the root directory, ensure that the parent directory exists
+		parent := filepath.Dir(header.Name)
+		parentPath := filepath.Join(dest, parent)
+		if _, err2 := os.Lstat(parentPath); err2 != nil && os.IsNotExist(err2) {
+			if err3 := os.MkdirAll(parentPath, 0750); err3 != nil {
+				return false, err3
+			}
+		}
+	}
+	path := filepath.Join(dest, header.Name)
+	if (*entries)[path] {
+		return false, fmt.Errorf("duplicate entry for %s", path)
+	}
+	(*entries)[path] = true
+	rel, err := filepath.Rel(dest, path)
+	if err != nil {
+		return false, err
+	}
+	info := header.FileInfo()
+	if strings.HasPrefix(rel, ".."+string(os.PathSeparator)) {
+		return false, fmt.Errorf("%q is outside of %q", header.Name, dest)
+	}
+
+	if strings.HasPrefix(info.Name(), ".wh.") {
+		path = strings.Replace(path, ".wh.", "", 1)
+
+		if err = os.RemoveAll(path); err != nil {
+			return true, errors.Wrap(err, "unable to delete whiteout path")
+		}
+
+		return true, nil
+	}
+
+	if header.Typeflag != tar.TypeDir {
+		err = os.RemoveAll(path)
+		if err != nil && !os.IsNotExist(err) {
+			return false, err
+		}
+	}
+
+	switch header.Typeflag {
+	case tar.TypeDir:
+		fi, err := os.Lstat(path)
+		if err != nil && !os.IsNotExist(err) {
+			return false, err
+		}
+		if os.IsNotExist(err) || !fi.IsDir() {
+			err = os.RemoveAll(path)
+			if err != nil && !os.IsNotExist(err) {
+				return false, err
+			}
+			err = os.MkdirAll(path, info.Mode())
+			if err != nil {
+				return false, err
+			}
+		}
+
+	case tar.TypeReg, tar.TypeRegA:
+		f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY, info.Mode())
+		if err != nil {
+			return false, errors.Wrap(err, "unable to open file")
+		}
+
+		if _, err := io.Copy(f, reader); err != nil {
+			defer f.Close()
+			return false, errors.Wrap(err, "unable to copy")
+		}
+		defer f.Close()
+
+	case tar.TypeLink:
+		target := filepath.Join(dest, header.Linkname)
+
+		if !strings.HasPrefix(target, dest) {
+			return false, fmt.Errorf("invalid hardlink %q -> %q", target, header.Linkname)
+		}
+
+		if err := os.Link(target, path); err != nil {
+			return false, err
+		}
+
+	case tar.TypeSymlink:
+		target := filepath.Join(filepath.Dir(path), header.Linkname)
+
+		if !strings.HasPrefix(target, dest) {
+			return false, fmt.Errorf("invalid symlink %q -> %q", path, header.Linkname)
+		}
+
+		if err := os.Symlink(header.Linkname, path); err != nil {
+			return false, err
+		}
+	case tar.TypeXGlobalHeader:
+		return false, nil
+	}
+
+	return false, nil
 }

@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/containers/image/v5/manifest"
-	"github.com/go-check/check"
+	"gopkg.in/check.v1"
 )
 
 const skopeoBinary = "skopeo"

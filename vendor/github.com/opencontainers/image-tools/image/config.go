@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -31,16 +30,11 @@ import (
 	"github.com/pkg/errors"
 )
 
-type config v1.Image
-
-func findConfig(w walker, d *v1.Descriptor) (*config, error) {
-	var c config
+func findConfig(w walker, d *v1.Descriptor) (*v1.Image, error) {
+	var c v1.Image
 	cpath := filepath.Join("blobs", string(d.Digest.Algorithm()), d.Digest.Hex())
 
-	switch err := w.walk(func(path string, info os.FileInfo, r io.Reader) error {
-		if info.IsDir() || filepath.Clean(path) != cpath {
-			return nil
-		}
+	switch err := w.find(cpath, func(path string, r io.Reader) error {
 		buf, err := ioutil.ReadAll(r)
 		if err != nil {
 			return errors.Wrapf(err, "%s: error reading config", path)
@@ -65,7 +59,7 @@ func findConfig(w walker, d *v1.Descriptor) (*config, error) {
 	}
 }
 
-func (c *config) runtimeSpec(rootfs string) (*specs.Spec, error) {
+func runtimeSpec(c *v1.Image, rootfs string) (*specs.Spec, error) {
 	if c.OS != "linux" {
 		return nil, fmt.Errorf("%s: unsupported OS", c.OS)
 	}

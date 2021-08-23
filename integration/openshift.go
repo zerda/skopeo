@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"github.com/docker/docker/pkg/homedir"
-	"github.com/go-check/check"
+	"gopkg.in/check.v1"
 )
 
 var adminKUBECONFIG = map[string]string{
