@@ -21,6 +21,7 @@ type optionalBoolValue optionalBool
 func optionalBoolFlag(fs *pflag.FlagSet, p *optionalBool, name, usage string) *pflag.Flag {
 	flag := fs.VarPF(internalNewOptionalBoolValue(p), name, "", usage)
 	flag.NoOptDefVal = "true"
+	flag.DefValue = "false"
 	return flag
 }
 

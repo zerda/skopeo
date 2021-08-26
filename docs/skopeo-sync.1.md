@@ -74,13 +74,13 @@ Print usage statement.
 
 **--src-no-creds** _bool-value_ Access the registry anonymously.
 
-**--src-tls-verify** _bool-value_ Require HTTPS and verify certificates when talking to a container source registry or daemon (defaults to true).
+**--src-tls-verify** _bool-value_ Require HTTPS and verify certificates when talking to a container source registry or daemon. Default to source registry entry in registry.conf setting.
 
 **--dest-cert-dir** _path_ Use certificates (*.crt, *.cert, *.key) at _path_ to connect to the destination registry or daemon.
 
 **--dest-no-creds** _bool-value_  Access the registry anonymously.
 
-**--dest-tls-verify** _bool-value_ Require HTTPS and verify certificates when talking to a container destination registry or daemon (defaults to true).
+**--dest-tls-verify** _bool-value_ Require HTTPS and verify certificates when talking to a container destination registry or daemon. Default to destination registry entry in registry.conf setting.
 
 **--src-registry-token** _Bearer token_ for accessing the source registry.
 
