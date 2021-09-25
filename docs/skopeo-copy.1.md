@@ -120,7 +120,7 @@ Access the registry anonymously.
 
 **--src-tls-verify** _bool-value_
 
-Require HTTPS and verify certificates when talking to container source registry or daemon (defaults to true).
+Require HTTPS and verify certificates when talking to container source registry or daemon. Default to source registry setting.
 
 **--dest-cert-dir** _path_
 
@@ -132,7 +132,7 @@ Access the registry anonymously.
 
 **--dest-tls-verify** _bool-value_
 
-Require HTTPS and verify certificates when talking to container destination registry or daemon (defaults to true).
+Require HTTPS and verify certificates when talking to container destination registry or daemon. Default to destination registry setting.
 
 **--src-daemon-host** _host_
 

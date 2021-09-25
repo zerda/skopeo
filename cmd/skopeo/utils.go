@@ -63,7 +63,7 @@ func (opts *deprecatedTLSVerifyOption) warnIfUsed(alternatives []string) {
 func deprecatedTLSVerifyFlags() (pflag.FlagSet, *deprecatedTLSVerifyOption) {
 	opts := deprecatedTLSVerifyOption{}
 	fs := pflag.FlagSet{}
-	flag := optionalBoolFlag(&fs, &opts.tlsVerify, "tls-verify", "require HTTPS and verify certificates when accessing the container registry (defaults to true)")
+	flag := optionalBoolFlag(&fs, &opts.tlsVerify, "tls-verify", "require HTTPS and verify certificates when accessing the container registry")
 	flag.Hidden = true
 	return fs, &opts
 }
@@ -130,7 +130,7 @@ func dockerImageFlags(global *globalOptions, shared *sharedImageOptions, depreca
 	}
 	fs.Var(newOptionalStringValue(&flags.registryToken), flagPrefix+"registry-token", "Provide a Bearer token for accessing the registry")
 	fs.StringVar(&flags.dockerCertPath, flagPrefix+"cert-dir", "", "use certificates at `PATH` (*.crt, *.cert, *.key) to connect to the registry or daemon")
-	optionalBoolFlag(&fs, &flags.tlsVerify, flagPrefix+"tls-verify", "require HTTPS and verify certificates when talking to the container registry or daemon (defaults to true)")
+	optionalBoolFlag(&fs, &flags.tlsVerify, flagPrefix+"tls-verify", "require HTTPS and verify certificates when talking to the container registry or daemon")
 	fs.BoolVar(&flags.noCreds, flagPrefix+"no-creds", false, "Access the registry anonymously")
 	return fs, &flags
 }
