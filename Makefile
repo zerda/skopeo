@@ -119,7 +119,6 @@ help:
 	@echo
 	@echo " * 'install' - Install binaries and documents to system locations"
 	@echo " * 'binary' - Build skopeo with a container"
-	@echo " * 'static' - Build statically linked binary"
 	@echo " * 'bin/skopeo' - Build skopeo locally"
 	@echo " * 'test-unit' - Execute unit tests"
 	@echo " * 'test-integration' - Execute integration tests"
@@ -131,22 +130,6 @@ help:
 # Do the build and the output (skopeo) should appear in current dir
 binary: cmd/skopeo
 	$(CONTAINER_RUN) make bin/skopeo $(if $(DEBUG),DEBUG=$(DEBUG)) BUILDTAGS='$(BUILDTAGS)'
-
-# Update nix/nixpkgs.json its latest stable commit
-.PHONY: nixpkgs
-nixpkgs:
-	@nix run \
-		-f channel:nixos-21.05 nix-prefetch-git \
-		-c nix-prefetch-git \
-		--no-deepClone \
-		https://github.com/nixos/nixpkgs refs/heads/nixos-21.05 > nix/nixpkgs.json
-
-# Build statically linked binary
-.PHONY: static
-static:
-	@nix build -f nix/
-	mkdir -p ./bin
-	cp -rfp ./result/bin/* ./bin/
 
 # Build w/o using containers
 .PHONY: bin/skopeo
