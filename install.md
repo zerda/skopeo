@@ -15,29 +15,6 @@ sudo dnf -y install skopeo
 sudo dnf -y install skopeo
 ```
 
-Newer Skopeo releases may be available on the repositories provided by the
-Kubic project. Beware, these may not be suitable for production environments.
-
-on CentOS 8:
-
-```sh
-sudo dnf -y module disable container-tools
-sudo dnf -y install 'dnf-command(copr)'
-sudo dnf -y copr enable rhcontainerbot/container-selinux
-sudo curl -L -o /etc/yum.repos.d/devel:kubic:libcontainers:stable.repo https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/CentOS_8/devel:kubic:libcontainers:stable.repo
-sudo dnf -y install skopeo
-```
-
-on CentOS 8 Stream:
-
-```sh
-sudo dnf -y module disable container-tools
-sudo dnf -y install 'dnf-command(copr)'
-sudo dnf -y copr enable rhcontainerbot/container-selinux
-sudo curl -L -o /etc/yum.repos.d/devel:kubic:libcontainers:stable.repo https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/CentOS_8_Stream/devel:kubic:libcontainers:stable.repo
-sudo dnf -y install skopeo
-```
-
 ### RHEL/CentOS ≤ 7.x
 
 ```sh
@@ -69,12 +46,11 @@ $ nix-env -i skopeo
 
 ### Debian
 
-The skopeo package is available in
-the [Bullseye (testing) branch](https://packages.debian.org/bullseye/skopeo), which
-will be the next stable release (Debian 11) as well as Debian Unstable/Sid.
+The skopeo package is available on [Bullseye](https://packages.debian.org/bullseye/skopeo),
+and Debian Testing and Unstable.
 
 ```bash
-# Debian Testing/Bullseye or Unstable/Sid
+# Debian Bullseye, Testing or Unstable/Sid
 sudo apt-get update
 sudo apt-get -y install skopeo
 ```
@@ -97,17 +73,8 @@ sudo apt-get -y update
 sudo apt-get -y install skopeo
 ```
 
-If you would prefer newer (though not as well-tested) packages,
-the [Kubic project](https://build.opensuse.org/package/show/devel:kubic:libcontainers:stable/skopeo)
-provides packages for active Ubuntu releases 20.04 and newer (it should also work with direct derivatives like Pop!\_OS).
-Checkout the [Kubic project page](https://build.opensuse.org/package/show/devel:kubic:libcontainers:stable/skopeo)
-for a list of supported Ubuntu version and
-architecture combinations. **NOTE:** The command `sudo apt-get -y upgrade`
-maybe required in some cases if Skopeo cannot be installed without it.
-The build sources for the Kubic packages can be found [here](https://gitlab.com/rhcontainerbot/skopeo/-/tree/debian/debian).
-
-CAUTION: On Ubuntu 20.10 and newer, we highly recommend you use Buildah, Podman and Skopeo ONLY from EITHER the Kubic repo
-OR the official Ubuntu repos. Mixing and matching may lead to unpredictable situations including installation conflicts.
+The [Kubic project](https://build.opensuse.org/package/show/devel:kubic:libcontainers:stable/skopeo)
+provides packages for Ubuntu 20.04 (it should also work with direct derivatives like Pop!\_OS).
 
 ```bash
 . /etc/os-release
@@ -117,6 +84,11 @@ sudo apt-get update
 sudo apt-get -y upgrade
 sudo apt-get -y install skopeo
 ```
+
+### Windows
+Skopeo has not yet been packaged for Windows. There is an [open feature
+request](https://github.com/containers/skopeo/issues/715) and contributions are
+always welcome.
 
 
 Otherwise, read on for building and installing it from source:
