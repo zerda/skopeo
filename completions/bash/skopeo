@@ -97,6 +97,7 @@ _skopeo_sync() {
     --scoped
     --src-no-creds
     --src-tls-verify
+    --keep-going
     "
 
     local transports
