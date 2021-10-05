@@ -9,7 +9,7 @@ require (
 	github.com/containers/image/v5 v5.16.0
 	github.com/containers/ocicrypt v1.1.2
 	github.com/containers/storage v1.37.0
-	github.com/docker/docker v20.10.8+incompatible
+	github.com/docker/docker v20.10.9+incompatible
 	github.com/dsnet/compress v0.0.2-0.20210315054119-f66993602bf5 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/google/uuid v1.3.0 // indirect
