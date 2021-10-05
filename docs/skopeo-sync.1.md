@@ -88,6 +88,9 @@ Print usage statement.
 
 **--retry-times**  the number of times to retry, retry wait time will be exponentially increased based on the number of failed attempts.
 
+**--keep-going**
+If any errors occur during copying of images, those errors are logged and the process continues syncing rest of the images and finally fails at the end.
+
 ## EXAMPLES
 
 ### Synchronizing to a local directory
