@@ -164,6 +164,22 @@ Bearer token for accessing the destination registry.
 
 The number of times to retry. Retry wait time will be exponentially increased based on the number of failed attempts.
 
+**--src-username**
+
+The username to access the source registry.
+
+**--src-password**
+
+The password to access the source registry.
+
+**--dest-username**
+
+The username to access the destination registry.
+
+**--dest-password**
+
+The password to access the destination registry.
+
 ## EXAMPLES
 
 To just copy an image from one registry to another:

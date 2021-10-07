@@ -64,6 +64,14 @@ Directory to use to share blobs across OCI repositories.
 
 Require HTTPS and verify certificates when talking to the container registry or daemon. Default to registry.conf setting.
 
+**--username**
+
+The username to access the registry.
+
+**--password**
+
+The password to access the registry.
+
 ## EXAMPLES
 
 Mark image example/pause for deletion from the registry.example.com registry:

@@ -197,6 +197,54 @@ func TestImageDestOptionsNewSystemContext(t *testing.T) {
 	assert.Error(t, err)
 }
 
+// TestImageOptionsUsernamePassword verifies that using the username and password
+// options works as expected
+func TestImageOptionsUsernamePassword(t *testing.T) {
+	for _, command := range []struct {
+		commandArgs        []string
+		expectedAuthConfig *types.DockerAuthConfig // data to expect, or nil if an error is expected
+	}{
+		// Set only username/password (without --creds), expected to pass
+		{
+			commandArgs:        []string{"--dest-username", "foo", "--dest-password", "bar"},
+			expectedAuthConfig: &types.DockerAuthConfig{Username: "foo", Password: "bar"},
+		},
+		// no username but set password, expect error
+		{
+			commandArgs:        []string{"--dest-password", "foo"},
+			expectedAuthConfig: nil,
+		},
+		// set username but no password. expected to fail (we currently don't allow a user without password)
+		{
+			commandArgs:        []string{"--dest-username", "bar"},
+			expectedAuthConfig: nil,
+		},
+		// set username with --creds, expected to fail
+		{
+			commandArgs:        []string{"--dest-username", "bar", "--dest-creds", "hello:world", "--dest-password", "foo"},
+			expectedAuthConfig: nil,
+		},
+		// set username with --no-creds, expected to fail
+		{
+			commandArgs:        []string{"--dest-username", "bar", "--dest-no-creds", "--dest-password", "foo"},
+			expectedAuthConfig: nil,
+		},
+	} {
+		opts := fakeImageDestOptions(t, "dest-", true, []string{}, command.commandArgs)
+		// parse the command options
+		res, err := opts.newSystemContext()
+		if command.expectedAuthConfig == nil {
+			assert.Error(t, err)
+		} else {
+			require.NoError(t, err)
+			assert.Equal(t, &types.SystemContext{
+				DockerRegistryUserAgent: defaultUserAgent,
+				DockerAuthConfig:        command.expectedAuthConfig,
+			}, res)
+		}
+	}
+}
+
 func TestTLSVerifyFlags(t *testing.T) {
 	type systemContextOpts interface { // Either *imageOptions or *imageDestOptions
 		newSystemContext() (*types.SystemContext, error)

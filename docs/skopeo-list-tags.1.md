@@ -43,6 +43,14 @@ The number of times to retry. Retry wait time will be exponentially increased ba
 
 Require HTTPS and verify certificates when talking to the container registry or daemon. Default to registry.conf setting.
 
+**--username**
+
+The username to access the registry.
+
+**--password**
+
+The password to access the registry.
+
 ## REPOSITORY NAMES
 
 Repository names are transport-specific references as each transport may have its own concept of a "repository" and "tags". Currently, only the Docker transport is supported.

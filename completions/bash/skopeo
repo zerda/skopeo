@@ -51,6 +51,10 @@ _skopeo_copy() {
     --dest-daemon-host
     --src-registry-token
     --dest-registry-token
+    --src-username
+    --src-password
+    --dest-username
+    --dest-password
     "
 
     local boolean_options="
@@ -87,6 +91,10 @@ _skopeo_sync() {
     --src-cert-dir
     --src-creds
     --src-registry-token
+    --src-username
+    --src-password
+    --dest-username
+    --dest-password
     "
 
     local boolean_options="
@@ -116,6 +124,8 @@ _skopeo_inspect() {
      --format
      --retry-times
      --registry-token
+    --username
+    --password
      "
      local boolean_options="
      --config
@@ -163,6 +173,8 @@ _skopeo_delete() {
      --creds
      --cert-dir
      --registry-token
+    --username
+    --password
      "
      local boolean_options="
      --tls-verify
@@ -183,6 +195,8 @@ _skopeo_layers() {
        --creds
        --cert-dir
        --registry-token
+      --username
+      --password
      "
      local boolean_options="
        --tls-verify
@@ -197,6 +211,8 @@ _skopeo_list_repository_tags() {
      --creds
      --cert-dir
      --registry-token
+    --username
+    --password
      "
 
      local boolean_options="

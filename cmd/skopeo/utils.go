@@ -91,6 +91,8 @@ type dockerImageOptions struct {
 	deprecatedTLSVerify *deprecatedTLSVerifyOption // May be shared across several imageOptions instances, or nil.
 	authFilePath        optionalString             // Path to a */containers/auth.json (prefixed version to override shared image option).
 	credsOption         optionalString             // username[:password] for accessing a registry
+	userName            optionalString             // username for accessing a registry
+	password            optionalString             // password for accessing a registry
 	registryToken       optionalString             // token to be used directly as a Bearer token when accessing the registry
 	dockerCertPath      string                     // A directory using Docker-like *.{crt,cert,key} files for connecting to a registry or a daemon
 	tlsVerify           optionalBool               // Require HTTPS and verify certificates (for docker: and docker-daemon:)
@@ -122,6 +124,8 @@ func dockerImageFlags(global *globalOptions, shared *sharedImageOptions, depreca
 		fs.Var(newOptionalStringValue(&flags.authFilePath), flagPrefix+"authfile", "path of the authentication file. Default is ${XDG_RUNTIME_DIR}/containers/auth.json")
 	}
 	fs.Var(newOptionalStringValue(&flags.credsOption), flagPrefix+"creds", "Use `USERNAME[:PASSWORD]` for accessing the registry")
+	fs.Var(newOptionalStringValue(&flags.userName), flagPrefix+"username", "Username for accessing the registry")
+	fs.Var(newOptionalStringValue(&flags.password), flagPrefix+"password", "Password for accessing the registry")
 	if credsOptionAlias != "" {
 		// This is horribly ugly, but we need to support the old option forms of (skopeo copy) for compatibility.
 		// Don't add any more cases like this.
@@ -180,11 +184,29 @@ func (opts *imageOptions) newSystemContext() (*types.SystemContext, error) {
 	if opts.credsOption.present && opts.noCreds {
 		return nil, errors.New("creds and no-creds cannot be specified at the same time")
 	}
+	if opts.userName.present && opts.noCreds {
+		return nil, errors.New("username and no-creds cannot be specified at the same time")
+	}
+	if opts.credsOption.present && opts.userName.present {
+		return nil, errors.New("creds and username cannot be specified at the same time")
+	}
+	// if any of username or password is present, then both are expected to be present
+	if opts.userName.present != opts.password.present {
+		if opts.userName.present {
+			return nil, errors.New("password must be specified when username is specified")
+		}
+		return nil, errors.New("username must be specified when password is specified")
+	}
 	if opts.credsOption.present {
 		var err error
 		ctx.DockerAuthConfig, err = getDockerAuth(opts.credsOption.value)
 		if err != nil {
 			return nil, err
+		}
+	} else if opts.userName.present {
+		ctx.DockerAuthConfig = &types.DockerAuthConfig{
+			Username: opts.userName.value,
+			Password: opts.password.value,
 		}
 	}
 	if opts.registryToken.present {
