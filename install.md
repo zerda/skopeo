@@ -1,4 +1,4 @@
-# Installing from packages
+# Installing Skopeo
 
 ## Distribution Packages
 `skopeo` may already be packaged in your distribution.
@@ -91,14 +91,26 @@ request](https://github.com/containers/skopeo/issues/715) and contributions are
 always welcome.
 
 
+## Container Images
+
+Skopeo container images are available at `quay.io/skopeo/stable:latest`.
+For example,
+
+```bash
+podman run docker://quay.io/skopeo/stable:latest copy --help
+```
+
+[Read more](./contrib/skopeoimage/README.md).
+
+
+## Building from Source
+
 Otherwise, read on for building and installing it from source:
 
 To build the `skopeo` binary you need at least Go 1.12.
 
 There are two ways to build skopeo: in a container, or locally without a
 container. Choose the one which better matches your needs and environment.
-
-## Building from Source
 
 ### Building without a container
 
