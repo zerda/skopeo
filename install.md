@@ -203,3 +203,41 @@ Finally, after the binary and documentation is built:
 ```bash
 sudo make install
 ```
+
+### Building a static binary
+
+There have been efforts in the past to produce and maintain static builds, but the maintainers prefer to run Skopeo using distro packages or within containers. This is because static builds of Skopeo tend to be unreliable and functionally restricted. Specifically:
+- Some features of Skopeo depend on non-Go libraries like `libgpgme` and `libdevmapper`.
+- Generating static Go binaries uses native Go libraries, which don't support e.g. `.local` or LDAP-based name resolution.
+
+That being said, if you would like to build Skopeo statically, you might be able to do it by combining all the following steps.
+- Export environment variable `CGO_ENABLED=0` (disabling CGO causes Go to prefer native libraries when possible, instead of dynamically linking against system libraries).
+- Set the `BUILDTAGS=containers_image_openpgp` Make variable (this remove the dependency on `libgpgme` and its companion libraries).
+- Clear the `GO_DYN_FLAGS` Make variable (which otherwise seems to force the creation of a dynamic executable).
+
+The following command implements these steps to produce a static binary in the `bin` subdirectory of the repository:
+
+```bash
+docker run -v $PWD:/src -w /src -e CGO_ENABLED=0 golang \
+make BUILDTAGS=containers_image_openpgp GO_DYN_FLAGS=
+```
+
+Keep in mind that the resulting binary is unsupported and might crash randomly. Only use if you know what you're doing!
+
+For more information, history, and context about static builds, check the following issues:
+
+- [#391] - Consider distributing statically built binaries as part of release
+- [#669] - Static build fails with segmentation violation
+- [#670] - Fixing static binary build using container
+- [#755] - Remove static and in-container targets from Makefile
+- [#932] - Add nix derivation for static builds
+- [#1336] - Unable to run skopeo on Fedora 30 (due to dyn lib dependency)
+- [#1478] - Publish binary releases to GitHub (request+discussion)
+
+[#391]: https://github.com/containers/skopeo/issues/391
+[#669]: https://github.com/containers/skopeo/issues/669
+[#670]: https://github.com/containers/skopeo/issues/670
+[#755]: https://github.com/containers/skopeo/issues/755
+[#932]: https://github.com/containers/skopeo/issues/932
+[#1336]: https://github.com/containers/skopeo/issues/1336
+[#1478]: https://github.com/containers/skopeo/issues/1478
