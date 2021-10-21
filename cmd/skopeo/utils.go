@@ -227,6 +227,7 @@ type imageDestOptions struct {
 	ociAcceptUncompressedLayers bool        // Whether to accept uncompressed layers in the oci: transport
 	compressionFormat           string      // Format to use for the compression
 	compressionLevel            optionalInt // Level to use for the compression
+	precomputeDigests           bool        // Precompute digests to dedup layers when saving to the docker: transport
 }
 
 // imageDestFlags prepares a collection of CLI flags writing into imageDestOptions, and the managed imageDestOptions structure.
@@ -240,6 +241,7 @@ func imageDestFlags(global *globalOptions, shared *sharedImageOptions, deprecate
 	fs.BoolVar(&opts.ociAcceptUncompressedLayers, flagPrefix+"oci-accept-uncompressed-layers", false, "Allow uncompressed image layers when saving to an OCI image using the 'oci' transport. (default is to compress things that aren't compressed)")
 	fs.StringVar(&opts.compressionFormat, flagPrefix+"compress-format", "", "`FORMAT` to use for the compression")
 	fs.Var(newOptionalIntValue(&opts.compressionLevel), flagPrefix+"compress-level", "`LEVEL` to use for the compression")
+	fs.BoolVar(&opts.precomputeDigests, flagPrefix+"precompute-digests", false, "Precompute digests to prevent uploading layers already on the registry using the 'docker' transport.")
 	return fs, &opts
 }
 
@@ -264,6 +266,7 @@ func (opts *imageDestOptions) newSystemContext() (*types.SystemContext, error) {
 	if opts.compressionLevel.present {
 		ctx.CompressionLevel = &opts.compressionLevel.value
 	}
+	ctx.DockerRegistryPushPrecomputeDigests = opts.precomputeDigests
 	return ctx, err
 }
 
