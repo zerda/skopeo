@@ -160,6 +160,10 @@ Bearer token for accessing the source registry.
 
 Bearer token for accessing the destination registry.
 
+**--dest-precompute-digests** _bool-value_
+
+Precompute digests to ensure layers are not uploaded that already exist on the destination registry. Layers with initially unknown digests (ex. compressing "on the fly") will be temporarily streamed to disk.
+
 **--retry-times**
 
 The number of times to retry. Retry wait time will be exponentially increased based on the number of failed attempts.

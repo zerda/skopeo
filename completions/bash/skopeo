@@ -65,6 +65,7 @@ _skopeo_copy() {
     --src-no-creds
     --dest-no-creds
     --dest-oci-accept-uncompressed-layers
+    --dest-precompute-digests
     "
 
     local transports
