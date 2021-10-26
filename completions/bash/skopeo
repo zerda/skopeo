@@ -133,6 +133,7 @@ _skopeo_inspect() {
      --raw
      --tls-verify
      --no-creds
+     --no-tags -n
     "
 
     local transports
