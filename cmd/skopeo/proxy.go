@@ -302,6 +302,30 @@ func (h *proxyHandler) allocPipe() (*os.File, *activePipe, error) {
 	return piper, &f, nil
 }
 
+// returnBytes generates a return pipe() from a byte array
+// In the future it might be nicer to return this via memfd_create()
+func (h *proxyHandler) returnBytes(retval interface{}, buf []byte) (replyBuf, error) {
+	var ret replyBuf
+	piper, f, err := h.allocPipe()
+	if err != nil {
+		return ret, err
+	}
+
+	go func() {
+		// Signal completion when we return
+		defer f.wg.Done()
+		_, err = io.Copy(f.w, bytes.NewReader(buf))
+		if err != nil {
+			f.err = err
+		}
+	}()
+
+	ret.value = retval
+	ret.fd = piper
+	ret.pipeid = uint32(f.w.Fd())
+	return ret, nil
+}
+
 // GetManifest returns a copy of the manifest, converted to OCI format, along with the original digest.
 func (h *proxyHandler) GetManifest(args []interface{}) (replyBuf, error) {
 	h.lock.Lock()
@@ -362,24 +386,7 @@ func (h *proxyHandler) GetManifest(args []interface{}) (replyBuf, error) {
 	} else {
 		serialized = rawManifest
 	}
-	piper, f, err := h.allocPipe()
-	if err != nil {
-		return ret, err
-	}
-
-	go func() {
-		// Signal completion when we return
-		defer f.wg.Done()
-		_, err = io.Copy(f.w, bytes.NewReader(serialized))
-		if err != nil {
-			f.err = err
-		}
-	}()
-
-	ret.value = digest.String()
-	ret.fd = piper
-	ret.pipeid = uint32(f.w.Fd())
-	return ret, nil
+	return h.returnBytes(digest, serialized)
 }
 
 // GetConfig returns a copy of the image configuration, converted to OCI format.
@@ -409,24 +416,8 @@ func (h *proxyHandler) GetConfig(args []interface{}) (replyBuf, error) {
 	if err != nil {
 		return ret, err
 	}
+	return h.returnBytes(nil, serialized)
 
-	piper, f, err := h.allocPipe()
-	if err != nil {
-		return ret, err
-	}
-
-	go func() {
-		// Signal completion when we return
-		defer f.wg.Done()
-		_, err = io.Copy(f.w, bytes.NewReader(serialized))
-		if err != nil {
-			f.err = err
-		}
-	}()
-
-	ret.fd = piper
-	ret.pipeid = uint32(f.w.Fd())
-	return ret, nil
 }
 
 // GetBlob fetches a blob, performing digest verification.
