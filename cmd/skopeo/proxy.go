@@ -83,9 +83,11 @@ import (
 
 // protocolVersion is semantic version of the protocol used by this proxy.
 // The first version of the protocol has major version 0.2 to signify a
-// departure from the original code which used HTTP.  The minor version is 1
-// instead of 0 to help exercise semver parsers.
-const protocolVersion = "0.2.1"
+// departure from the original code which used HTTP.
+//
+// 0.2.1: Initial version
+// 0.2.2: Added support for fetching image configuration as OCI
+const protocolVersion = "0.2.2"
 
 // maxMsgSize is the current limit on a packet size.
 // Note that all non-metadata (i.e. payload data) is sent over a pipe.
@@ -380,6 +382,53 @@ func (h *proxyHandler) GetManifest(args []interface{}) (replyBuf, error) {
 	return ret, nil
 }
 
+// GetConfig returns a copy of the image configuration, converted to OCI format.
+func (h *proxyHandler) GetConfig(args []interface{}) (replyBuf, error) {
+	h.lock.Lock()
+	defer h.lock.Unlock()
+
+	var ret replyBuf
+
+	if h.sysctx == nil {
+		return ret, fmt.Errorf("Must invoke Initialize")
+	}
+	if len(args) != 1 {
+		return ret, fmt.Errorf("invalid request, expecting: [imgid]")
+	}
+	imgref, err := h.parseImageFromID(args[0])
+	if err != nil {
+		return ret, err
+	}
+
+	ctx := context.TODO()
+	config, err := imgref.img.OCIConfig(ctx)
+	if err != nil {
+		return ret, err
+	}
+	serialized, err := json.Marshal(&config.Config)
+	if err != nil {
+		return ret, err
+	}
+
+	piper, f, err := h.allocPipe()
+	if err != nil {
+		return ret, err
+	}
+
+	go func() {
+		// Signal completion when we return
+		defer f.wg.Done()
+		_, err = io.Copy(f.w, bytes.NewReader(serialized))
+		if err != nil {
+			f.err = err
+		}
+	}()
+
+	ret.fd = piper
+	ret.pipeid = uint32(f.w.Fd())
+	return ret, nil
+}
+
 // GetBlob fetches a blob, performing digest verification.
 func (h *proxyHandler) GetBlob(args []interface{}) (replyBuf, error) {
 	h.lock.Lock()
@@ -551,6 +600,8 @@ func (h *proxyHandler) processRequest(req request) (rb replyBuf, terminate bool,
 		rb, err = h.CloseImage(req.Args)
 	case "GetManifest":
 		rb, err = h.GetManifest(req.Args)
+	case "GetConfig":
+		rb, err = h.GetConfig(req.Args)
 	case "GetBlob":
 		rb, err = h.GetBlob(req.Args)
 	case "FinishPipe":
