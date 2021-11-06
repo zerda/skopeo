@@ -491,11 +491,11 @@ func (h *proxyHandler) FinishPipe(args []interface{}) (replyBuf, error) {
 
 	var ret replyBuf
 
-	pipeidf, ok := args[0].(float64)
-	if !ok {
-		return ret, fmt.Errorf("finishpipe: expecting pipeid, not %T", args[0])
+	pipeidv, err := parseUint64(args[0])
+	if err != nil {
+		return ret, err
 	}
-	pipeid := uint32(pipeidf)
+	pipeid := uint32(pipeidv)
 
 	f, ok := h.activePipes[pipeid]
 	if !ok {
@@ -507,7 +507,7 @@ func (h *proxyHandler) FinishPipe(args []interface{}) (replyBuf, error) {
 	// And only now do we close the write half; this forces the client to call this API
 	f.w.Close()
 	// Propagate any errors from the goroutine worker
-	err := f.err
+	err = f.err
 	delete(h.activePipes, pipeid)
 	return ret, err
 }
