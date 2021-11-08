@@ -131,6 +131,42 @@ func (self *proxy) callNoFd(method string, args []interface{}) (rval interface{}
 	return rval, nil
 }
 
+func (self *proxy) callReadAllBytes(method string, args []interface{}) (rval interface{}, buf []byte, err error) {
+	var fd *pipefd
+	rval, fd, err = self.call(method, args)
+	if err != nil {
+		return
+	}
+	if fd == nil {
+		err = fmt.Errorf("Expected fd from method %s", method)
+		return
+	}
+	fetchchan := make(chan byteFetch)
+	go func() {
+		manifestBytes, err := ioutil.ReadAll(fd.fd)
+		fetchchan <- byteFetch{
+			content: manifestBytes,
+			err:     err,
+		}
+	}()
+	_, err = self.callNoFd("FinishPipe", []interface{}{fd.id})
+	if err != nil {
+		return
+	}
+	select {
+	case fetchRes := <-fetchchan:
+		err = fetchRes.err
+		if err != nil {
+			return
+		}
+
+		buf = fetchRes.content
+	case <-time.After(5 * time.Minute):
+		err = fmt.Errorf("timed out during proxy fetch")
+	}
+	return
+}
+
 func newProxy() (*proxy, error) {
 	fds, err := syscall.Socketpair(syscall.AF_LOCAL, syscall.SOCK_SEQPACKET, 0)
 	if err != nil {
@@ -206,35 +242,16 @@ func runTestGetManifest(p *proxy, img string) error {
 	}
 	imgid := uint32(imgidv)
 
-	v, fd, err := p.call("GetManifest", []interface{}{imgid})
+	v, manifestBytes, err := p.callReadAllBytes("GetManifest", []interface{}{imgid})
 	if err != nil {
 		return err
 	}
-	if fd == nil {
-		return fmt.Errorf("expected GetManifest fd")
-	}
-	fetchchan := make(chan byteFetch)
-	go func() {
-		manifestBytes, err := ioutil.ReadAll(fd.fd)
-		fetchchan <- byteFetch{
-			content: manifestBytes,
-			err:     err,
-		}
-	}()
-	_, _, err = p.call("FinishPipe", []interface{}{fd.id})
-	if err != nil {
-		return err
-	}
-	fetchRes := <-fetchchan
-	if fetchRes.err != nil {
-		return err
-	}
-	_, err = manifest.OCI1FromManifest(fetchRes.content)
+	_, err = manifest.OCI1FromManifest(manifestBytes)
 	if err != nil {
 		return err
 	}
 
-	_, _, err = p.call("CloseImage", []interface{}{imgid})
+	_, err = p.callNoFd("CloseImage", []interface{}{imgid})
 
 	return nil
 }
