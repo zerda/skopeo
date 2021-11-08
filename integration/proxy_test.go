@@ -145,9 +145,25 @@ func newProxy() (*proxy, error) {
 		return nil, err
 	}
 
-	return &proxy{
+	p := &proxy{
 		c: mysock.(*net.UnixConn),
-	}, nil
+	}
+
+	v, fd, err := p.call("Initialize", nil)
+	if err != nil {
+		return nil, err
+	}
+	if fd != nil {
+		return nil, fmt.Errorf("proxy Initialize: Unexpected fd")
+	}
+	semver, ok := v.(string)
+	if !ok {
+		return nil, fmt.Errorf("proxy Initialize: Unexpected value %T", v)
+	}
+	if !strings.HasPrefix(semver, expectedProxySemverMajor) {
+		return nil, fmt.Errorf("Unexpected semver %s", semver)
+	}
+	return p, nil
 }
 
 func init() {
@@ -182,32 +198,28 @@ type byteFetch struct {
 	err     error
 }
 
-func (s *ProxySuite) TestProxy(c *check.C) {
-	p, err := newProxy()
-	c.Assert(err, check.IsNil)
-
-	v, fd, err := p.call("Initialize", nil)
-	c.Assert(err, check.IsNil)
-	semver, ok := v.(string)
-	if !ok {
-		c.Fatalf("Unexpected value %T", v)
+func runTestGetManifest(p *proxy, img string) error {
+	v, fd, err := p.call("OpenImage", []interface{}{knownNotManifestListedImage_x8664})
+	if err != nil {
+		return err
 	}
-	if !strings.HasPrefix(semver, expectedProxySemverMajor) {
-		c.Fatalf("Unexpected semver %s", semver)
+	if fd != nil {
+		return fmt.Errorf("Unexpected fd")
 	}
-	c.Assert(fd, check.IsNil)
-
-	v, fd, err = p.call("OpenImage", []interface{}{knownNotManifestListedImage_x8664})
-	c.Assert(err, check.IsNil)
-	c.Assert(fd, check.IsNil)
 
 	imgidv, ok := v.(float64)
-	c.Assert(ok, check.Equals, true)
+	if !ok {
+		return fmt.Errorf("OpenImage return value is %T", v)
+	}
 	imgid := uint32(imgidv)
 
 	v, fd, err = p.call("GetManifest", []interface{}{imgid})
-	c.Assert(err, check.IsNil)
-	c.Assert(fd, check.NotNil)
+	if err != nil {
+		return err
+	}
+	if fd == nil {
+		return fmt.Errorf("expected GetManifest fd")
+	}
 	fetchchan := make(chan byteFetch)
 	go func() {
 		manifestBytes, err := ioutil.ReadAll(fd.fd)
@@ -217,15 +229,36 @@ func (s *ProxySuite) TestProxy(c *check.C) {
 		}
 	}()
 	_, _, err = p.call("FinishPipe", []interface{}{fd.id})
-	c.Assert(err, check.IsNil)
+	if err != nil {
+		return err
+	}
 	fetchRes := <-fetchchan
-	c.Assert(fetchRes.err, check.IsNil)
-
+	if fetchRes.err != nil {
+		return err
+	}
 	_, err = manifest.OCI1FromManifest(fetchRes.content)
+	if err != nil {
+		return err
+	}
+
+	_, _, err = p.call("CloseImage", []interface{}{imgid})
+
+	return nil
+}
+
+func (s *ProxySuite) TestProxy(c *check.C) {
+	p, err := newProxy()
 	c.Assert(err, check.IsNil)
 
-	td, err := ioutil.TempDir("", "skopeo-proxy")
-	defer os.RemoveAll(td)
+	err = runTestGetManifest(p, knownNotManifestListedImage_x8664)
+	if err != nil {
+		err = fmt.Errorf("Testing image %s: %v", knownNotManifestListedImage_x8664, err)
+	}
+	c.Assert(err, check.IsNil)
 
-	c.Assert(initOci(td), check.IsNil)
+	err = runTestGetManifest(p, knownListImage)
+	if err != nil {
+		err = fmt.Errorf("Testing image %s: %v", knownListImage, err)
+	}
+	c.Assert(err, check.IsNil)
 }

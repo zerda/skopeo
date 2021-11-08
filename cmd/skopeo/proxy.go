@@ -143,9 +143,9 @@ type activePipe struct {
 // openImage is an opened image reference
 type openImage struct {
 	// id is an opaque integer handle
-	id  uint32
-	src types.ImageSource
-	img types.Image
+	id        uint32
+	src       types.ImageSource
+	cachedimg types.Image
 }
 
 // proxyHandler is the state associated with our socket.
@@ -219,16 +219,11 @@ func (h *proxyHandler) OpenImage(args []interface{}) (replyBuf, error) {
 	if err != nil {
 		return ret, err
 	}
-	img, err := image.FromUnparsedImage(context.Background(), h.sysctx, image.UnparsedInstance(imgsrc, nil))
-	if err != nil {
-		return ret, fmt.Errorf("failed to load image: %w", err)
-	}
 
 	h.imageSerial++
 	openimg := &openImage{
 		id:  h.imageSerial,
 		src: imgsrc,
-		img: img,
 	}
 	h.images[openimg.id] = openimg
 	ret.value = openimg.id
@@ -326,7 +321,46 @@ func (h *proxyHandler) returnBytes(retval interface{}, buf []byte) (replyBuf, er
 	return ret, nil
 }
 
+// cacheTargetManifest is invoked when GetManifest or GetConfig is invoked
+// the first time for a given image.  If the requested image is a manifest
+// list, this function resolves it to the image matching the calling process'
+// operating system and architecture.
+//
+// TODO: Add GetRawManifest or so that exposes manifest lists
+func (h *proxyHandler) cacheTargetManifest(img *openImage) error {
+	ctx := context.Background()
+	if img.cachedimg != nil {
+		return nil
+	}
+	unparsedToplevel := image.UnparsedInstance(img.src, nil)
+	mfest, manifestType, err := unparsedToplevel.Manifest(ctx)
+	if err != nil {
+		return err
+	}
+	var target *image.UnparsedImage
+	if manifest.MIMETypeIsMultiImage(manifestType) {
+		manifestList, err := manifest.ListFromBlob(mfest, manifestType)
+		if err != nil {
+			return err
+		}
+		instanceDigest, err := manifestList.ChooseInstance(h.sysctx)
+		if err != nil {
+			return err
+		}
+		target = image.UnparsedInstance(img.src, &instanceDigest)
+	} else {
+		target = unparsedToplevel
+	}
+	cachedimg, err := image.FromUnparsedImage(ctx, h.sysctx, target)
+	if err != nil {
+		return err
+	}
+	img.cachedimg = cachedimg
+	return nil
+}
+
 // GetManifest returns a copy of the manifest, converted to OCI format, along with the original digest.
+// Manifest lists are resolved to the current operating system and architecture.
 func (h *proxyHandler) GetManifest(args []interface{}) (replyBuf, error) {
 	h.lock.Lock()
 	defer h.lock.Unlock()
@@ -344,11 +378,18 @@ func (h *proxyHandler) GetManifest(args []interface{}) (replyBuf, error) {
 		return ret, err
 	}
 
-	ctx := context.TODO()
-	rawManifest, manifestType, err := imgref.img.Manifest(ctx)
+	err = h.cacheTargetManifest(imgref)
 	if err != nil {
 		return ret, err
 	}
+	img := imgref.cachedimg
+
+	ctx := context.Background()
+	rawManifest, manifestType, err := img.Manifest(ctx)
+	if err != nil {
+		return ret, err
+	}
+
 	// We only support OCI and docker2schema2.  We know docker2schema2 can be easily+cheaply
 	// converted into OCI, so consumers only need to see OCI.
 	switch manifestType {
@@ -373,7 +414,7 @@ func (h *proxyHandler) GetManifest(args []interface{}) (replyBuf, error) {
 	// docker schema and MIME types.
 	if manifestType != imgspecv1.MediaTypeImageManifest {
 		manifestUpdates := types.ManifestUpdateOptions{ManifestMIMEType: imgspecv1.MediaTypeImageManifest}
-		ociImage, err := imgref.img.UpdatedImage(ctx, manifestUpdates)
+		ociImage, err := img.UpdatedImage(ctx, manifestUpdates)
 		if err != nil {
 			return ret, err
 		}
@@ -406,9 +447,14 @@ func (h *proxyHandler) GetConfig(args []interface{}) (replyBuf, error) {
 	if err != nil {
 		return ret, err
 	}
+	err = h.cacheTargetManifest(imgref)
+	if err != nil {
+		return ret, err
+	}
+	img := imgref.cachedimg
 
 	ctx := context.TODO()
-	config, err := imgref.img.OCIConfig(ctx)
+	config, err := img.OCIConfig(ctx)
 	if err != nil {
 		return ret, err
 	}
