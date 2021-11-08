@@ -118,6 +118,19 @@ func (self *proxy) call(method string, args []interface{}) (rval interface{}, fd
 	return
 }
 
+func (self *proxy) callNoFd(method string, args []interface{}) (rval interface{}, err error) {
+	var fd *pipefd
+	rval, fd, err = self.call(method, args)
+	if err != nil {
+		return
+	}
+	if fd != nil {
+		err = fmt.Errorf("Unexpected fd from method %s", method)
+		return
+	}
+	return rval, nil
+}
+
 func newProxy() (*proxy, error) {
 	fds, err := syscall.Socketpair(syscall.AF_LOCAL, syscall.SOCK_SEQPACKET, 0)
 	if err != nil {
@@ -149,12 +162,9 @@ func newProxy() (*proxy, error) {
 		c: mysock.(*net.UnixConn),
 	}
 
-	v, fd, err := p.call("Initialize", nil)
+	v, err := p.callNoFd("Initialize", nil)
 	if err != nil {
 		return nil, err
-	}
-	if fd != nil {
-		return nil, fmt.Errorf("proxy Initialize: Unexpected fd")
 	}
 	semver, ok := v.(string)
 	if !ok {
@@ -179,32 +189,15 @@ func (s *ProxySuite) SetUpSuite(c *check.C) {
 func (s *ProxySuite) TearDownSuite(c *check.C) {
 }
 
-func initOci(p string) error {
-	err := ioutil.WriteFile(filepath.Join(p, "oci-layout"), []byte("{\"imageLayoutVersion\":\"1.0.0\"}"), 0644)
-	if err != nil {
-		return err
-	}
-
-	blobdir := filepath.Join(p, "blobs/sha256")
-	err = os.MkdirAll(blobdir, 0755)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 type byteFetch struct {
 	content []byte
 	err     error
 }
 
 func runTestGetManifest(p *proxy, img string) error {
-	v, fd, err := p.call("OpenImage", []interface{}{knownNotManifestListedImage_x8664})
+	v, err := p.callNoFd("OpenImage", []interface{}{knownNotManifestListedImage_x8664})
 	if err != nil {
 		return err
-	}
-	if fd != nil {
-		return fmt.Errorf("Unexpected fd")
 	}
 
 	imgidv, ok := v.(float64)
@@ -213,7 +206,7 @@ func runTestGetManifest(p *proxy, img string) error {
 	}
 	imgid := uint32(imgidv)
 
-	v, fd, err = p.call("GetManifest", []interface{}{imgid})
+	v, fd, err := p.call("GetManifest", []interface{}{imgid})
 	if err != nil {
 		return err
 	}
