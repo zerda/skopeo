@@ -14,6 +14,7 @@ import (
 	"gopkg.in/check.v1"
 
 	"github.com/containers/image/v5/manifest"
+	imgspecv1 "github.com/opencontainers/image-spec/specs-go/v1"
 )
 
 // This image is known to be x86_64 only right now
@@ -230,7 +231,7 @@ type byteFetch struct {
 	err     error
 }
 
-func runTestGetManifest(p *proxy, img string) error {
+func runTestGetManifestAndConfig(p *proxy, img string) error {
 	v, err := p.callNoFd("OpenImage", []interface{}{knownNotManifestListedImage_x8664})
 	if err != nil {
 		return err
@@ -251,6 +252,21 @@ func runTestGetManifest(p *proxy, img string) error {
 		return err
 	}
 
+	v, configBytes, err := p.callReadAllBytes("GetConfig", []interface{}{imgid})
+	if err != nil {
+		return err
+	}
+	var config imgspecv1.ImageConfig
+	err = json.Unmarshal(configBytes, &config)
+	if err != nil {
+		return err
+	}
+
+	// Validate that the config seems sane
+	if len(config.Cmd) == 0 && len(config.Entrypoint) == 0 {
+		return fmt.Errorf("No CMD or ENTRYPOINT set")
+	}
+
 	_, err = p.callNoFd("CloseImage", []interface{}{imgid})
 
 	return nil
@@ -260,13 +276,13 @@ func (s *ProxySuite) TestProxy(c *check.C) {
 	p, err := newProxy()
 	c.Assert(err, check.IsNil)
 
-	err = runTestGetManifest(p, knownNotManifestListedImage_x8664)
+	err = runTestGetManifestAndConfig(p, knownNotManifestListedImage_x8664)
 	if err != nil {
 		err = fmt.Errorf("Testing image %s: %v", knownNotManifestListedImage_x8664, err)
 	}
 	c.Assert(err, check.IsNil)
 
-	err = runTestGetManifest(p, knownListImage)
+	err = runTestGetManifestAndConfig(p, knownListImage)
 	if err != nil {
 		err = fmt.Errorf("Testing image %s: %v", knownListImage, err)
 	}
