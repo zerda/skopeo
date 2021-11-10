@@ -201,14 +201,14 @@ func (h *proxyHandler) OpenImage(args []interface{}) (replyBuf, error) {
 	var ret replyBuf
 
 	if h.sysctx == nil {
-		return ret, fmt.Errorf("Must invoke Initialize")
+		return ret, fmt.Errorf("client error: must invoke Initialize")
 	}
 	if len(args) != 1 {
 		return ret, fmt.Errorf("invalid request, expecting one argument")
 	}
 	imageref, ok := args[0].(string)
 	if !ok {
-		return ret, fmt.Errorf("Expecting string imageref, not %T", args[0])
+		return ret, fmt.Errorf("expecting string imageref, not %T", args[0])
 	}
 
 	imgRef, err := alltransports.ParseImageName(imageref)
@@ -237,7 +237,7 @@ func (h *proxyHandler) CloseImage(args []interface{}) (replyBuf, error) {
 	var ret replyBuf
 
 	if h.sysctx == nil {
-		return ret, fmt.Errorf("Must invoke Initialize")
+		return ret, fmt.Errorf("client error: must invoke Initialize")
 	}
 	if len(args) != 1 {
 		return ret, fmt.Errorf("invalid request, expecting one argument")
@@ -255,7 +255,7 @@ func (h *proxyHandler) CloseImage(args []interface{}) (replyBuf, error) {
 func parseImageID(v interface{}) (uint32, error) {
 	imgidf, ok := v.(float64)
 	if !ok {
-		return 0, fmt.Errorf("Expecting integer imageid, not %T", v)
+		return 0, fmt.Errorf("expecting integer imageid, not %T", v)
 	}
 	return uint32(imgidf), nil
 }
@@ -264,10 +264,10 @@ func parseImageID(v interface{}) (uint32, error) {
 func parseUint64(v interface{}) (uint64, error) {
 	f, ok := v.(float64)
 	if !ok {
-		return 0, fmt.Errorf("Expecting numeric, not %T", v)
+		return 0, fmt.Errorf("expecting numeric, not %T", v)
 	}
 	if f > maxJSONFloat {
-		return 0, fmt.Errorf("Out of range integer for numeric %f", f)
+		return 0, fmt.Errorf("out of range integer for numeric %f", f)
 	}
 	return uint64(f), nil
 }
@@ -279,7 +279,7 @@ func (h *proxyHandler) parseImageFromID(v interface{}) (*openImage, error) {
 	}
 	imgref, ok := h.images[imgid]
 	if !ok {
-		return nil, fmt.Errorf("No image %v", imgid)
+		return nil, fmt.Errorf("no image %v", imgid)
 	}
 	return imgref, nil
 }
@@ -368,7 +368,7 @@ func (h *proxyHandler) GetManifest(args []interface{}) (replyBuf, error) {
 	var ret replyBuf
 
 	if h.sysctx == nil {
-		return ret, fmt.Errorf("Must invoke Initialize")
+		return ret, fmt.Errorf("client error: must invoke Initialize")
 	}
 	if len(args) != 1 {
 		return ret, fmt.Errorf("invalid request, expecting one argument")
@@ -397,9 +397,9 @@ func (h *proxyHandler) GetManifest(args []interface{}) (replyBuf, error) {
 		break
 	// Explicitly reject e.g. docker schema 1 type with a "legacy" note
 	case manifest.DockerV2Schema1MediaType, manifest.DockerV2Schema1SignedMediaType:
-		return ret, fmt.Errorf("Unsupported legacy manifest MIME type: %s", manifestType)
+		return ret, fmt.Errorf("unsupported legacy manifest MIME type: %s", manifestType)
 	default:
-		return ret, fmt.Errorf("Unsupported manifest MIME type: %s", manifestType)
+		return ret, fmt.Errorf("unsupported manifest MIME type: %s", manifestType)
 	}
 
 	// We always return the original digest, as that's what clients need to do pull-by-digest
@@ -438,7 +438,7 @@ func (h *proxyHandler) GetConfig(args []interface{}) (replyBuf, error) {
 	var ret replyBuf
 
 	if h.sysctx == nil {
-		return ret, fmt.Errorf("Must invoke Initialize")
+		return ret, fmt.Errorf("client error: must invoke Initialize")
 	}
 	if len(args) != 1 {
 		return ret, fmt.Errorf("invalid request, expecting: [imgid]")
@@ -474,7 +474,7 @@ func (h *proxyHandler) GetBlob(args []interface{}) (replyBuf, error) {
 	var ret replyBuf
 
 	if h.sysctx == nil {
-		return ret, fmt.Errorf("Must invoke Initialize")
+		return ret, fmt.Errorf("client error: must invoke Initialize")
 	}
 	if len(args) != 3 {
 		return ret, fmt.Errorf("found %d args, expecting (imgid, digest, size)", len(args))
@@ -517,7 +517,7 @@ func (h *proxyHandler) GetBlob(args []interface{}) (replyBuf, error) {
 			return
 		}
 		if n != int64(size) {
-			f.err = fmt.Errorf("Expected %d bytes in blob, got %d", size, n)
+			f.err = fmt.Errorf("expected %d bytes in blob, got %d", size, n)
 		}
 		if !verifier.Verified() {
 			f.err = fmt.Errorf("corrupted blob, expecting %s", d.String())
