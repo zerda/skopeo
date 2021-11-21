@@ -54,6 +54,10 @@ Directory to use to share blobs across OCI repositories.
 
 After copying the image, write the digest of the resulting image to the file.
 
+**--preserve-digests**
+
+Preserve the digests during copying. Fail if the digest cannot be preserved.
+
 **--encrypt-layer** _ints_
 
 *Experimental* the 0-indexed layer indices, with support for negative indexing (e.g. 0 is the first layer, -1 is the last layer)

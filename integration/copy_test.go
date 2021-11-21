@@ -1248,6 +1248,15 @@ func (s *CopySuite) TestCopyManifestConversion(c *check.C) {
 	verifyManifestMIMEType(c, destDir2, manifest.DockerV2Schema2MediaType)
 }
 
+func (s *CopySuite) TestCopyPreserveDigests(c *check.C) {
+	topDir, err := ioutil.TempDir("", "preserve-digests")
+	c.Assert(err, check.IsNil)
+	defer os.RemoveAll(topDir)
+
+	assertSkopeoSucceeds(c, "", "copy", knownListImage, "--multi-arch=all", "--preserve-digests", "dir:"+topDir)
+	assertSkopeoFails(c, ".*Instructed to preserve digests.*", "copy", knownListImage, "--multi-arch=all", "--preserve-digests", "--format=oci", "dir:"+topDir)
+}
+
 func (s *CopySuite) testCopySchemaConversionRegistries(c *check.C, schema1Registry, schema2Registry string) {
 	topDir, err := ioutil.TempDir("", "schema-conversion")
 	c.Assert(err, check.IsNil)
