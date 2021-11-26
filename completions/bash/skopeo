@@ -40,6 +40,7 @@ _skopeo_copy() {
     --src-authfile
     --dest-authfile
     --format -f
+    --multi-arch
     --sign-by
     --src-creds --screds
     --src-cert-dir

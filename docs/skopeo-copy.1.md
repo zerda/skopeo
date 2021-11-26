@@ -66,6 +66,17 @@ MANIFEST TYPE (oci, v2s1, or v2s2) to use in the destination (default is manifes
 
 Print usage statement
 
+**--multi-arch**
+
+Control what is copied if _source-image_ refers to a multi-architecture image. Default is system.
+
+Options:
+- system: Copy only the image that matches the system architecture
+- all: Copy the full multi-architecture image
+- index-only: Copy only the index
+
+The index-only option usually fails unless the referenced per-architecture images are already present in the destination, or the target registry supports sparse indexes.
+
 **--quiet**, **-q**
 
 Suppress output information when copying images.
