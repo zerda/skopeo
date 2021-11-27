@@ -1190,12 +1190,14 @@ func (s *SkopeoSuite) TestCopySrcAndDestWithAuth(c *check.C) {
 }
 
 func (s *CopySuite) TestCopyNoPanicOnHTTPResponseWithoutTLSVerifyFalse(c *check.C) {
+	topDir, err := ioutil.TempDir("", "no-panic-on-https-response-without-tls-verify-false")
+	c.Assert(err, check.IsNil)
+	defer os.RemoveAll(topDir)
+
 	const ourRegistry = "docker://" + v2DockerRegistryURL + "/"
 
-	// dir:test isn't created beforehand just because we already know this could
-	// just fail when evaluating the src
 	assertSkopeoFails(c, ".*server gave HTTP response to HTTPS client.*",
-		"copy", ourRegistry+"foobar", "dir:test")
+		"copy", ourRegistry+"foobar", "dir:"+topDir)
 }
 
 func (s *CopySuite) TestCopySchemaConversion(c *check.C) {
