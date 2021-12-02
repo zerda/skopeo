@@ -32,6 +32,7 @@ type copyOptions struct {
 	format              commonFlag.OptionalString // Force conversion of the image to a specified format
 	quiet               bool                      // Suppress output information when copying images
 	all                 bool                      // Copy all of the images if the source is a list
+	multiArch           commonFlag.OptionalString // How to handle multi architecture images
 	encryptLayer        []int                     // The list of layers to encrypt
 	encryptionKeys      []string                  // Keys needed to encrypt the image
 	decryptionKeys      []string                  // Keys needed to decrypt the image
@@ -72,6 +73,7 @@ See skopeo(1) section "IMAGE NAMES" for the expected format
 	flags.StringSliceVar(&opts.additionalTags, "additional-tag", []string{}, "additional tags (supports docker-archive)")
 	flags.BoolVarP(&opts.quiet, "quiet", "q", false, "Suppress output information when copying images")
 	flags.BoolVarP(&opts.all, "all", "a", false, "Copy all images if SOURCE-IMAGE is a list")
+	flags.Var(commonFlag.NewOptionalStringValue(&opts.multiArch), "multi-arch", `How to handle multi-architecture images (system, all, or index-only)`)
 	flags.BoolVar(&opts.removeSignatures, "remove-signatures", false, "Do not copy signatures from SOURCE-IMAGE")
 	flags.StringVar(&opts.signByFingerprint, "sign-by", "", "Sign the image using a GPG key with the specified `FINGERPRINT`")
 	flags.StringVar(&opts.digestFile, "digestfile", "", "Write the digest of the pushed image to the specified file")
@@ -80,6 +82,27 @@ See skopeo(1) section "IMAGE NAMES" for the expected format
 	flags.IntSliceVar(&opts.encryptLayer, "encrypt-layer", []int{}, "*Experimental* the 0-indexed layer indices, with support for negative indexing (e.g. 0 is the first layer, -1 is the last layer)")
 	flags.StringSliceVar(&opts.decryptionKeys, "decryption-key", []string{}, "*Experimental* key needed to decrypt the image")
 	return cmd
+}
+
+// parseMultiArch parses the list processing selection
+// It returns the copy.ImageListSelection to use with image.Copy option
+func parseMultiArch(multiArch string) (copy.ImageListSelection, error) {
+	switch multiArch {
+	case "system":
+		return copy.CopySystemImage, nil
+	case "all":
+		return copy.CopyAllImages, nil
+	// There is no CopyNoImages value in copy.ImageListSelection, but because we
+	// don't provide an option to select a set of images to copy, we can use
+	// CopySpecificImages.
+	case "index-only":
+		return copy.CopySpecificImages, nil
+	// We don't expose CopySpecificImages other than index-only above, because
+	// we currently don't provide an option to choose the images to copy. That
+	// could be added in the future.
+	default:
+		return copy.CopySystemImage, fmt.Errorf("unknown multi-arch option %q. Choose one of the supported options: 'system', 'all', or 'index-only'", multiArch)
+	}
 }
 
 func (opts *copyOptions) run(args []string, stdout io.Writer) error {
@@ -143,7 +166,17 @@ func (opts *copyOptions) run(args []string, stdout io.Writer) error {
 	if opts.quiet {
 		stdout = nil
 	}
+
 	imageListSelection := copy.CopySystemImage
+	if opts.multiArch.Present() && opts.all {
+		return fmt.Errorf("Cannot use --all and --multi-arch flags together")
+	}
+	if opts.multiArch.Present() {
+		imageListSelection, err = parseMultiArch(opts.multiArch.Value())
+		if err != nil {
+			return err
+		}
+	}
 	if opts.all {
 		imageListSelection = copy.CopyAllImages
 	}

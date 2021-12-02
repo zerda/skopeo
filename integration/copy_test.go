@@ -123,10 +123,10 @@ func (s *CopySuite) TestCopyAllWithManifestListRoundTrip(c *check.C) {
 	dir2, err := ioutil.TempDir("", "copy-all-manifest-list-dir")
 	c.Assert(err, check.IsNil)
 	defer os.RemoveAll(dir2)
-	assertSkopeoSucceeds(c, "", "copy", "--all", knownListImage, "oci:"+oci1)
-	assertSkopeoSucceeds(c, "", "copy", "--all", "oci:"+oci1, "dir:"+dir1)
-	assertSkopeoSucceeds(c, "", "copy", "--all", "dir:"+dir1, "oci:"+oci2)
-	assertSkopeoSucceeds(c, "", "copy", "--all", "oci:"+oci2, "dir:"+dir2)
+	assertSkopeoSucceeds(c, "", "copy", "--multi-arch=all", knownListImage, "oci:"+oci1)
+	assertSkopeoSucceeds(c, "", "copy", "--multi-arch=all", "oci:"+oci1, "dir:"+dir1)
+	assertSkopeoSucceeds(c, "", "copy", "--multi-arch=all", "dir:"+dir1, "oci:"+oci2)
+	assertSkopeoSucceeds(c, "", "copy", "--multi-arch=all", "oci:"+oci2, "dir:"+dir2)
 	assertDirImagesAreEqual(c, dir1, dir2)
 	out := combinedOutputOfCommand(c, "diff", "-urN", oci1, oci2)
 	c.Assert(out, check.Equals, "")
@@ -145,13 +145,28 @@ func (s *CopySuite) TestCopyAllWithManifestListConverge(c *check.C) {
 	dir2, err := ioutil.TempDir("", "copy-all-manifest-list-dir")
 	c.Assert(err, check.IsNil)
 	defer os.RemoveAll(dir2)
-	assertSkopeoSucceeds(c, "", "copy", "--all", knownListImage, "oci:"+oci1)
-	assertSkopeoSucceeds(c, "", "copy", "--all", "oci:"+oci1, "dir:"+dir1)
-	assertSkopeoSucceeds(c, "", "copy", "--all", "--format", "oci", knownListImage, "dir:"+dir2)
-	assertSkopeoSucceeds(c, "", "copy", "--all", "dir:"+dir2, "oci:"+oci2)
+	assertSkopeoSucceeds(c, "", "copy", "--multi-arch=all", knownListImage, "oci:"+oci1)
+	assertSkopeoSucceeds(c, "", "copy", "--multi-arch=all", "oci:"+oci1, "dir:"+dir1)
+	assertSkopeoSucceeds(c, "", "copy", "--multi-arch=all", "--format", "oci", knownListImage, "dir:"+dir2)
+	assertSkopeoSucceeds(c, "", "copy", "--multi-arch=all", "dir:"+dir2, "oci:"+oci2)
 	assertDirImagesAreEqual(c, dir1, dir2)
 	out := combinedOutputOfCommand(c, "diff", "-urN", oci1, oci2)
 	c.Assert(out, check.Equals, "")
+}
+
+func (s *CopySuite) TestCopyNoneWithManifestList(c *check.C) {
+	dir1, err := ioutil.TempDir("", "copy-all-manifest-list-dir")
+	c.Assert(err, check.IsNil)
+	defer os.RemoveAll(dir1)
+	assertSkopeoSucceeds(c, "", "copy", "--multi-arch=index-only", knownListImage, "dir:"+dir1)
+
+	manifestPath := filepath.Join(dir1, "manifest.json")
+	readManifest, err := ioutil.ReadFile(manifestPath)
+	c.Assert(err, check.IsNil)
+	mimeType := manifest.GuessMIMEType(readManifest)
+	c.Assert(mimeType, check.Equals, "application/vnd.docker.distribution.manifest.list.v2+json")
+	out := combinedOutputOfCommand(c, "ls", "-1", dir1)
+	c.Assert(out, check.Equals, "manifest.json\nversion\n")
 }
 
 func (s *CopySuite) TestCopyWithManifestListConverge(c *check.C) {
@@ -168,9 +183,9 @@ func (s *CopySuite) TestCopyWithManifestListConverge(c *check.C) {
 	c.Assert(err, check.IsNil)
 	defer os.RemoveAll(dir2)
 	assertSkopeoSucceeds(c, "", "copy", knownListImage, "oci:"+oci1)
-	assertSkopeoSucceeds(c, "", "copy", "--all", "oci:"+oci1, "dir:"+dir1)
+	assertSkopeoSucceeds(c, "", "copy", "--multi-arch=all", "oci:"+oci1, "dir:"+dir1)
 	assertSkopeoSucceeds(c, "", "copy", "--format", "oci", knownListImage, "dir:"+dir2)
-	assertSkopeoSucceeds(c, "", "copy", "--all", "dir:"+dir2, "oci:"+oci2)
+	assertSkopeoSucceeds(c, "", "copy", "--multi-arch=all", "dir:"+dir2, "oci:"+oci2)
 	assertDirImagesAreEqual(c, dir1, dir2)
 	out := combinedOutputOfCommand(c, "diff", "-urN", oci1, oci2)
 	c.Assert(out, check.Equals, "")
@@ -181,7 +196,7 @@ func (s *CopySuite) TestCopyAllWithManifestListStorageFails(c *check.C) {
 	c.Assert(err, check.IsNil)
 	defer os.RemoveAll(storage)
 	storage = fmt.Sprintf("[vfs@%s/root+%s/runroot]", storage, storage)
-	assertSkopeoFails(c, `.*destination transport .* does not support copying multiple images as a group.*`, "copy", "--all", knownListImage, "containers-storage:"+storage+"test")
+	assertSkopeoFails(c, `.*destination transport .* does not support copying multiple images as a group.*`, "copy", "--multi-arch=all", knownListImage, "containers-storage:"+storage+"test")
 }
 
 func (s *CopySuite) TestCopyWithManifestListStorage(c *check.C) {
@@ -239,7 +254,7 @@ func (s *CopySuite) TestCopyWithManifestListDigest(c *check.C) {
 	c.Assert(err, check.IsNil)
 	digest := manifestDigest.String()
 	assertSkopeoSucceeds(c, "", "copy", knownListImage+"@"+digest, "dir:"+dir1)
-	assertSkopeoSucceeds(c, "", "copy", "--all", knownListImage+"@"+digest, "dir:"+dir2)
+	assertSkopeoSucceeds(c, "", "copy", "--multi-arch=all", knownListImage+"@"+digest, "dir:"+dir2)
 	assertSkopeoSucceeds(c, "", "copy", "dir:"+dir1, "oci:"+oci1)
 	assertSkopeoSucceeds(c, "", "copy", "dir:"+dir2, "oci:"+oci2)
 	out := combinedOutputOfCommand(c, "diff", "-urN", oci1, oci2)
