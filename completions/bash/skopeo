@@ -109,6 +109,7 @@ _skopeo_sync() {
     --src-no-creds
     --src-tls-verify
     --keep-going
+    --preserve-digests
     "
 
     local transports
