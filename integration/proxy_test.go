@@ -250,18 +250,37 @@ func runTestGetManifestAndConfig(p *proxy, img string) error {
 		return err
 	}
 
-	v, configBytes, err := p.callReadAllBytes("GetConfig", []interface{}{imgid})
+	v, configBytes, err := p.callReadAllBytes("GetFullConfig", []interface{}{imgid})
 	if err != nil {
 		return err
 	}
-	var config imgspecv1.ImageConfig
+	var config imgspecv1.Image
 	err = json.Unmarshal(configBytes, &config)
 	if err != nil {
 		return err
 	}
 
+	// Validate that the image config seems sane
+	if config.Architecture == "" {
+		return fmt.Errorf("No architecture found")
+	}
+	if len(config.Config.Cmd) == 0 && len(config.Config.Entrypoint) == 0 {
+		return fmt.Errorf("No CMD or ENTRYPOINT set")
+	}
+
+	// Also test this legacy interface
+	v, ctrconfigBytes, err := p.callReadAllBytes("GetConfig", []interface{}{imgid})
+	if err != nil {
+		return err
+	}
+	var ctrconfig imgspecv1.ImageConfig
+	err = json.Unmarshal(ctrconfigBytes, &ctrconfig)
+	if err != nil {
+		return err
+	}
+
 	// Validate that the config seems sane
-	if len(config.Cmd) == 0 && len(config.Entrypoint) == 0 {
+	if len(ctrconfig.Cmd) == 0 && len(ctrconfig.Entrypoint) == 0 {
 		return fmt.Errorf("No CMD or ENTRYPOINT set")
 	}
 
