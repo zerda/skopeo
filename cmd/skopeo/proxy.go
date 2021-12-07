@@ -87,7 +87,8 @@ import (
 //
 // 0.2.1: Initial version
 // 0.2.2: Added support for fetching image configuration as OCI
-const protocolVersion = "0.2.2"
+// 0.2.3: Added GetFullConfig
+const protocolVersion = "0.2.3"
 
 // maxMsgSize is the current limit on a packet size.
 // Note that all non-metadata (i.e. payload data) is sent over a pipe.
@@ -430,7 +431,45 @@ func (h *proxyHandler) GetManifest(args []interface{}) (replyBuf, error) {
 	return h.returnBytes(digest, serialized)
 }
 
-// GetConfig returns a copy of the image configuration, converted to OCI format.
+// GetFullConfig returns a copy of the image configuration, converted to OCI format.
+// https://github.com/opencontainers/image-spec/blob/main/config.md
+func (h *proxyHandler) GetFullConfig(args []interface{}) (replyBuf, error) {
+	h.lock.Lock()
+	defer h.lock.Unlock()
+
+	var ret replyBuf
+
+	if h.sysctx == nil {
+		return ret, fmt.Errorf("client error: must invoke Initialize")
+	}
+	if len(args) != 1 {
+		return ret, fmt.Errorf("invalid request, expecting: [imgid]")
+	}
+	imgref, err := h.parseImageFromID(args[0])
+	if err != nil {
+		return ret, err
+	}
+	err = h.cacheTargetManifest(imgref)
+	if err != nil {
+		return ret, err
+	}
+	img := imgref.cachedimg
+
+	ctx := context.TODO()
+	config, err := img.OCIConfig(ctx)
+	if err != nil {
+		return ret, err
+	}
+	serialized, err := json.Marshal(&config)
+	if err != nil {
+		return ret, err
+	}
+	return h.returnBytes(nil, serialized)
+}
+
+// GetConfig returns a copy of the container runtime configuration, converted to OCI format.
+// Note that due to a historical mistake, this returns not the full image configuration,
+// but just the container runtime configuration.  You should use GetFullConfig instead.
 func (h *proxyHandler) GetConfig(args []interface{}) (replyBuf, error) {
 	h.lock.Lock()
 	defer h.lock.Unlock()
@@ -463,7 +502,6 @@ func (h *proxyHandler) GetConfig(args []interface{}) (replyBuf, error) {
 		return ret, err
 	}
 	return h.returnBytes(nil, serialized)
-
 }
 
 // GetBlob fetches a blob, performing digest verification.
@@ -639,6 +677,8 @@ func (h *proxyHandler) processRequest(req request) (rb replyBuf, terminate bool,
 		rb, err = h.GetManifest(req.Args)
 	case "GetConfig":
 		rb, err = h.GetConfig(req.Args)
+	case "GetFullConfig":
+		rb, err = h.GetFullConfig(req.Args)
 	case "GetBlob":
 		rb, err = h.GetBlob(req.Args)
 	case "FinishPipe":
