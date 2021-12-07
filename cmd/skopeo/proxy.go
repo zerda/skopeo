@@ -87,7 +87,8 @@ import (
 //
 // 0.2.1: Initial version
 // 0.2.2: Added support for fetching image configuration as OCI
-const protocolVersion = "0.2.2"
+// 0.2.3: Added GetFullConfig
+const protocolVersion = "0.2.3"
 
 // maxMsgSize is the current limit on a packet size.
 // Note that all non-metadata (i.e. payload data) is sent over a pipe.
