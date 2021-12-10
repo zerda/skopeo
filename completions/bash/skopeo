@@ -67,6 +67,7 @@ _skopeo_copy() {
     --dest-no-creds
     --dest-oci-accept-uncompressed-layers
     --dest-precompute-digests
+    --preserve-digests
     "
 
     local transports
@@ -108,6 +109,7 @@ _skopeo_sync() {
     --src-no-creds
     --src-tls-verify
     --keep-going
+    --preserve-digests
     "
 
     local transports

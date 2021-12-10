@@ -40,6 +40,7 @@ type syncOptions struct {
 	destination         string                    // Destination registry name
 	scoped              bool                      // When true, namespace copied images at destination using the source repository name
 	all                 bool                      // Copy all of the images if an image in the source is a list
+	preserveDigests     bool                      // Preserve digests during sync
 	keepGoing           bool                      // Whether or not to abort the sync if there are any errors during syncing the images
 }
 
@@ -106,6 +107,7 @@ See skopeo-sync(1) for details.
 	flags.StringVarP(&opts.destination, "dest", "d", "", "DESTINATION transport type")
 	flags.BoolVar(&opts.scoped, "scoped", false, "Images at DESTINATION are prefix using the full source image path as scope")
 	flags.BoolVarP(&opts.all, "all", "a", false, "Copy all images if SOURCE-IMAGE is a list")
+	flags.BoolVar(&opts.preserveDigests, "preserve-digests", false, "Preserve digests of images and lists")
 	flags.BoolVarP(&opts.keepGoing, "keep-going", "", false, "Do not abort the sync if any image copy fails")
 	flags.AddFlagSet(&sharedFlags)
 	flags.AddFlagSet(&deprecatedTLSVerifyFlags)
@@ -577,6 +579,7 @@ func (opts *syncOptions) run(args []string, stdout io.Writer) error {
 		ReportWriter:                          os.Stdout,
 		DestinationCtx:                        destinationCtx,
 		ImageListSelection:                    imageListSelection,
+		PreserveDigests:                       opts.preserveDigests,
 		OptimizeDestinationImageAlreadyExists: true,
 		ForceManifestMIMEType:                 manifestType,
 	}

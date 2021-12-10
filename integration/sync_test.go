@@ -163,6 +163,22 @@ func (s *SyncSuite) TestDocker2DirTaggedAll(c *check.C) {
 	c.Assert(out, check.Equals, "")
 }
 
+func (s *SyncSuite) TestPreserveDigests(c *check.C) {
+	tmpDir, err := ioutil.TempDir("", "skopeo-sync-test")
+	c.Assert(err, check.IsNil)
+	defer os.RemoveAll(tmpDir)
+
+	// FIXME: It would be nice to use one of the local Docker registries instead of needing an Internet connection.
+	image := pullableTaggedManifestList
+
+	// copy docker => dir
+	assertSkopeoSucceeds(c, "", "copy", "--all", "--preserve-digests", "docker://"+image, "dir:"+tmpDir)
+	_, err = os.Stat(path.Join(tmpDir, "manifest.json"))
+	c.Assert(err, check.IsNil)
+
+	assertSkopeoFails(c, ".*Instructed to preserve digests.*", "copy", "--all", "--preserve-digests", "--format=oci", "docker://"+image, "dir:"+tmpDir)
+}
+
 func (s *SyncSuite) TestScoped(c *check.C) {
 	// FIXME: It would be nice to use one of the local Docker registries instead of needing an Internet connection.
 	image := pullableTaggedImage
