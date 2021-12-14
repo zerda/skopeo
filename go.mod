@@ -8,7 +8,7 @@ require (
 	github.com/containers/image/v5 v5.17.1-0.20211129144953-4f6d0b45be6c
 	github.com/containers/ocicrypt v1.1.2
 	github.com/containers/storage v1.37.0
-	github.com/docker/docker v20.10.11+incompatible
+	github.com/docker/docker v20.10.12+incompatible
 	github.com/dsnet/compress v0.0.2-0.20210315054119-f66993602bf5 // indirect
 	github.com/opencontainers/go-digest v1.0.0
 	github.com/opencontainers/image-spec v1.0.2-0.20211123152302-43a7dee1ec31
