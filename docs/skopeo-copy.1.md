@@ -93,6 +93,10 @@ Do not copy signatures, if any, from _source-image_. Necessary when copying a si
 
 Add a signature using that key ID for an image name corresponding to _destination-image_
 
+**--sign-passphrase-file**=_path_
+
+The passphare to use when signing with the key ID from `--sign-by`. Only the first line will be read. A passphrase stored in a file is of questionable security if other users can read this file. Do not use this option if at all avoidable.
+
 **--src-shared-blob-dir** _directory_
 
 Directory to use to share blobs across OCI repositories.

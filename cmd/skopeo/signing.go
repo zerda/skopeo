@@ -7,12 +7,14 @@ import (
 	"io"
 	"io/ioutil"
 
+	"github.com/containers/image/v5/pkg/cli"
 	"github.com/containers/image/v5/signature"
 	"github.com/spf13/cobra"
 )
 
 type standaloneSignOptions struct {
-	output string // Output file path
+	output         string // Output file path
+	passphraseFile string // Path pointing to a passphrase file when signing
 }
 
 func standaloneSignCmd() *cobra.Command {
@@ -25,6 +27,7 @@ func standaloneSignCmd() *cobra.Command {
 	adjustUsage(cmd)
 	flags := cmd.Flags()
 	flags.StringVarP(&opts.output, "output", "o", "", "output the signature to `SIGNATURE`")
+	flags.StringVarP(&opts.passphraseFile, "passphrase-file", "", "", "file that contains a passphrase for the --sign-by key")
 	return cmd
 }
 
@@ -46,7 +49,13 @@ func (opts *standaloneSignOptions) run(args []string, stdout io.Writer) error {
 		return fmt.Errorf("Error initializing GPG: %v", err)
 	}
 	defer mech.Close()
-	signature, err := signature.SignDockerManifest(manifest, dockerReference, mech, fingerprint)
+
+	passphrase, err := cli.ReadPassphraseFile(opts.passphraseFile)
+	if err != nil {
+		return err
+	}
+
+	signature, err := signature.SignDockerManifestWithOptions(manifest, dockerReference, mech, fingerprint, &signature.SignOptions{Passphrase: passphrase})
 	if err != nil {
 		return fmt.Errorf("Error creating signature: %v", err)
 	}

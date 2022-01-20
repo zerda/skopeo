@@ -12,6 +12,13 @@ function setup() {
     export GNUPGHOME=$TESTDIR/skopeo-gpg
     mkdir --mode=0700 $GNUPGHOME
 
+    PASSPHRASE_FILE=$TESTDIR/passphrase-file
+    passphrase=$(random_string 20)
+    echo $passphrase > $PASSPHRASE_FILE
+
+    PASSPHRASE_FILE_WRONG=$TESTDIR/passphrase-file-wrong
+    echo $(random_string 10) > $PASSPHRASE_FILE_WRONG
+
     # gpg on f30 needs this, otherwise:
     #   gpg: agent_genkey failed: Inappropriate ioctl for device
     # ...but gpg on f29 (and, probably, Ubuntu) doesn't grok this
@@ -21,7 +28,7 @@ function setup() {
     fi
 
     for k in alice bob;do
-        gpg --batch $GPGOPTS --gen-key --passphrase '' <<END_GPG
+        gpg --batch $GPGOPTS --gen-key --passphrase $passphrase <<END_GPG
 Key-Type: RSA
 Name-Real: Test key - $k
 Name-email: $k@test.redhat.com
@@ -81,8 +88,18 @@ END_POLICY_JSON
     start_registry reg
 }
 
+function kill_gpg_agent {
+    # Kill the running gpg-agent to drop unlocked keys. This allows for testing
+    # handling of invalid passphrases.
+    run gpgconf --kill gpg-agent
+    if [ "$status" -ne 0 ]; then
+        die "could not restart gpg-agent: $output"
+    fi
+}
+
 @test "signing" {
-    run_skopeo '?' standalone-sign /dev/null busybox alice@test.redhat.com -o /dev/null
+    kill_gpg_agent
+    run_skopeo '?' standalone-sign /dev/null busybox alice@test.redhat.com -o /dev/null --passphrase-file $PASSPHRASE_FILE
     if [[ "$output" =~ 'signing is not supported' ]]; then
         skip "skopeo built without support for creating signatures"
         return 1
@@ -100,7 +117,8 @@ END_POLICY_JSON
     while read path sig comments; do
         local sign_opt=
         if [[ $sig != '-' ]]; then
-            sign_opt="--sign-by=${sig}@test.redhat.com"
+            kill_gpg_agent
+            sign_opt=" --sign-passphrase-file=$PASSPHRASE_FILE --sign-by=${sig}@test.redhat.com"
         fi
         run_skopeo --registries.d $REGISTRIES_D \
                    copy --dest-tls-verify=false \
@@ -144,7 +162,8 @@ END_TESTS
 }
 
 @test "signing: remove signature" {
-    run_skopeo '?' standalone-sign /dev/null busybox alice@test.redhat.com -o /dev/null
+    kill_gpg_agent
+    run_skopeo '?' standalone-sign /dev/null busybox alice@test.redhat.com -o /dev/null --passphrase-file $PASSPHRASE_FILE
     if [[ "$output" =~ 'signing is not supported' ]]; then
         skip "skopeo built without support for creating signatures"
         return 1
@@ -157,11 +176,24 @@ END_TESTS
     run_skopeo copy docker://quay.io/libpod/busybox:latest \
                dir:$TESTDIR/busybox
     # Push a signed image
+    kill_gpg_agent
     run_skopeo --registries.d $REGISTRIES_D \
                copy --dest-tls-verify=false \
                --sign-by=alice@test.redhat.com \
+               --sign-passphrase-file $PASSPHRASE_FILE \
                dir:$TESTDIR/busybox \
                docker://localhost:5000/myns/alice:signed
+
+    # Wrong passphrase file
+    kill_gpg_agent
+    run_skopeo 1 --registries.d $REGISTRIES_D \
+               copy --dest-tls-verify=false \
+               --sign-by=alice@test.redhat.com \
+               --sign-passphrase-file $PASSPHRASE_FILE_WRONG \
+               dir:$TESTDIR/busybox \
+               docker://localhost:5000/myns/alice:signed
+    expect_output --substring "Bad passphrase"
+
     # Fetch the image with signature
     run_skopeo  --registries.d $REGISTRIES_D \
                 --policy $POLICY_JSON \
@@ -180,7 +212,8 @@ END_TESTS
 }
 
 @test "signing: standalone" {
-    run_skopeo '?' standalone-sign /dev/null busybox alice@test.redhat.com -o /dev/null
+    kill_gpg_agent
+    run_skopeo '?' standalone-sign /dev/null busybox alice@test.redhat.com -o /dev/null --passphrase-file $PASSPHRASE_FILE
     if [[ "$output" =~ 'signing is not supported' ]]; then
         skip "skopeo built without support for creating signatures"
         return 1
@@ -196,7 +229,9 @@ END_TESTS
                docker://localhost:5000/busybox:latest \
                dir:$TESTDIR/busybox
     # Standalone sign
+    kill_gpg_agent
     run_skopeo standalone-sign -o $TESTDIR/busybox.signature \
+               --passphrase-file $PASSPHRASE_FILE \
                $TESTDIR/busybox/manifest.json \
                localhost:5000/busybox:latest \
                alice@test.redhat.com
