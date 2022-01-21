@@ -112,6 +112,9 @@ endif
 #           use source debugging tools like delve.
 all: bin/skopeo docs
 
+codespell:
+	codespell -S Makefile,build,buildah,buildah.spec,imgtype,copy,AUTHORS,bin,vendor,.git,go.sum,CHANGELOG.md,changelog.txt,seccomp.json,.cirrus.yml,"*.xz,*.gz,*.tar,*.tgz,*ico,*.png,*.1,*.5,*.orig,*.rej" -L fpr,uint,iff,od,ERRO -w
+
 help:
 	@echo "Usage: make <target>"
 	@echo
