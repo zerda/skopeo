@@ -104,7 +104,7 @@ const maxJSONFloat = float64(1<<53 - 1)
 type request struct {
 	// Method is the name of the function
 	Method string `json:"method"`
-	// Args is the arguments (parsed inside the fuction)
+	// Args is the arguments (parsed inside the function)
 	Args []interface{} `json:"args"`
 }
 
