@@ -144,6 +144,14 @@ function setup() {
     diff -urN $shareddir $dir2/blobs
 }
 
+@test "copy: sif image" {
+    local localimg=dir:$TESTDIR/dir
+
+    run_skopeo copy sif:${TEST_SOURCE_DIR}/testdata/busybox_latest.sif $localimg
+    run_skopeo inspect $localimg --format "{{.Architecture}}"
+    expect_output "amd64"
+}
+
 teardown() {
     podman rm -f reg
 

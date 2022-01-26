@@ -61,6 +61,9 @@ _run_setup() {
     # VM's come with the distro. skopeo package pre-installed
     dnf erase -y skopeo
 
+    # Required for testing the SIF transport
+    dnf install -y fakeroot squashfs-tools
+
     # A slew of compiled binaries are pre-built and distributed
     # within the CI/Dev container image, but we want to run
     # things directly on the host VM.  Fortunately they're all
