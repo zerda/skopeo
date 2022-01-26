@@ -12,6 +12,7 @@ import (
 	"github.com/containers/image/v5/copy"
 	"github.com/containers/image/v5/docker/reference"
 	"github.com/containers/image/v5/manifest"
+	"github.com/containers/image/v5/pkg/cli"
 	"github.com/containers/image/v5/transports"
 	"github.com/containers/image/v5/transports/alltransports"
 	encconfig "github.com/containers/ocicrypt/config"
@@ -28,6 +29,7 @@ type copyOptions struct {
 	additionalTags      []string                  // For docker-archive: destinations, in addition to the name:tag specified as destination, also add these
 	removeSignatures    bool                      // Do not copy signatures from the source image
 	signByFingerprint   string                    // Sign the image using a GPG key with the specified fingerprint
+	signPassphraseFile  string                    // Path pointing to a passphrase file when signing
 	digestFile          string                    // Write digest to this file
 	format              commonFlag.OptionalString // Force conversion of the image to a specified format
 	quiet               bool                      // Suppress output information when copying images
@@ -78,6 +80,7 @@ See skopeo(1) section "IMAGE NAMES" for the expected format
 	flags.BoolVar(&opts.preserveDigests, "preserve-digests", false, "Preserve digests of images and lists")
 	flags.BoolVar(&opts.removeSignatures, "remove-signatures", false, "Do not copy signatures from SOURCE-IMAGE")
 	flags.StringVar(&opts.signByFingerprint, "sign-by", "", "Sign the image using a GPG key with the specified `FINGERPRINT`")
+	flags.StringVar(&opts.signPassphraseFile, "sign-passphrase-file", "", "File that contains a passphrase for the --sign-by key")
 	flags.StringVar(&opts.digestFile, "digestfile", "", "Write the digest of the pushed image to the specified file")
 	flags.VarP(commonFlag.NewOptionalStringValue(&opts.format), "format", "f", `MANIFEST TYPE (oci, v2s1, or v2s2) to use in the destination (default is manifest type of source, with fallbacks)`)
 	flags.StringSliceVar(&opts.encryptionKeys, "encryption-key", []string{}, "*Experimental* key with the encryption protocol to use needed to encrypt the image (e.g. jwe:/path/to/key.pem)")
@@ -219,10 +222,16 @@ func (opts *copyOptions) run(args []string, stdout io.Writer) error {
 		decConfig = cc.DecryptConfig
 	}
 
+	passphrase, err := cli.ReadPassphraseFile(opts.signPassphraseFile)
+	if err != nil {
+		return err
+	}
+
 	return retry.RetryIfNecessary(ctx, func() error {
 		manifestBytes, err := copy.Image(ctx, policyContext, destRef, srcRef, &copy.Options{
 			RemoveSignatures:      opts.removeSignatures,
 			SignBy:                opts.signByFingerprint,
+			SignPassphrase:        passphrase,
 			ReportWriter:          stdout,
 			SourceCtx:             sourceCtx,
 			DestinationCtx:        destinationCtx,

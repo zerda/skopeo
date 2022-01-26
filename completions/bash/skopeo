@@ -42,6 +42,7 @@ _skopeo_copy() {
     --format -f
     --multi-arch
     --sign-by
+    --sign-passphrase-file
     --src-creds --screds
     --src-cert-dir
     --src-tls-verify
@@ -89,6 +90,7 @@ _skopeo_sync() {
     --format
     --retry-times
     --sign-by
+    --sign-passphrase-file
     --src
     --src-authfile
     --src-cert-dir
@@ -150,6 +152,7 @@ _skopeo_inspect() {
 _skopeo_standalone_sign() {
      local options_with_args="
        -o --output
+       --passphrase-file
      "
      local boolean_options="
      "
