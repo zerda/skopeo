@@ -1,6 +1,10 @@
 #!/bin/bash
 
-SKOPEO_BINARY=${SKOPEO_BINARY:-$(dirname ${BASH_SOURCE})/../skopeo}
+# Directory containing system test sources
+TEST_SOURCE_DIR=${TEST_SOURCE_DIR:-$(dirname ${BASH_SOURCE})}
+
+# Skopeo executable
+SKOPEO_BINARY=${SKOPEO_BINARY:-${TEST_SOURCE_DIR}/../bin/skopeo}
 
 # Default timeout for a skopeo command.
 SKOPEO_TIMEOUT=${SKOPEO_TIMEOUT:-300}
