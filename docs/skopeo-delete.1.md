@@ -42,7 +42,7 @@ Use docker daemon host at _host_ (`docker-daemon:` transport only)
 
 Print usage statement
 
-**--no-creds** _bool-value_
+**--no-creds**
 
 Access the registry anonymously.
 

@@ -27,7 +27,7 @@ Use certificates at _path_ (\*.crt, \*.cert, \*.key) to connect to the registry.
 
 Print usage statement
 
-**--no-creds** _bool-value_
+**--no-creds**
 
 Access the registry anonymously.
 
