@@ -8,9 +8,9 @@ skopeo\-inspect - Return low-level information about _image-name_ in a registry.
 
 ## DESCRIPTION
 
-Return low-level information about _image-name_ in a registry
+Return low-level information about _image-name_ in a registry.
+See [skopeo(1)](skopeo.1.md) for the format of _image-name_.
 
-_image-name_ name of image to retrieve information about
 
 ## OPTIONS
 
