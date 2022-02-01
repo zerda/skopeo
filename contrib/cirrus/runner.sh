@@ -64,6 +64,10 @@ _run_setup() {
     # Required for testing the SIF transport
     dnf install -y fakeroot squashfs-tools
 
+    msg "Removing systemd-resolved from nsswitch.conf"
+    # /etc/resolv.conf is already set to bypass systemd-resolvd
+    sed -i -r -e 's/^(hosts.+)resolve.+dns/\1dns/' /etc/nsswitch.conf
+
     # A slew of compiled binaries are pre-built and distributed
     # within the CI/Dev container image, but we want to run
     # things directly on the host VM.  Fortunately they're all
