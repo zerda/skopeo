@@ -113,15 +113,15 @@ Key to be used for decryption of images. Key can point to keys and/or certificat
 
 Credentials for accessing the source registry.
 
-**--dest-compress** _bool-value_
+**--dest-compress**
 
 Compress tarball image layers when saving to directory using the 'dir' transport. (default is same compression type as source).
 
-**--dest-decompress** _bool-value_
+**--dest-decompress**
 
 Decompress tarball image layers when saving to directory using the 'dir' transport. (default is same compression type as source).
 
-**--dest-oci-accept-uncompressed-layers** _bool-value_
+**--dest-oci-accept-uncompressed-layers**
 
 Allow uncompressed image layers when saving to an OCI image using the 'oci' transport. (default is to compress things that aren't compressed).
 
@@ -133,11 +133,11 @@ Credentials for accessing the destination registry.
 
 Use certificates at _path_ (*.crt, *.cert, *.key) to connect to the source registry or daemon.
 
-**--src-no-creds** _bool-value_
+**--src-no-creds**
 
 Access the registry anonymously.
 
-**--src-tls-verify** _bool-value_
+**--src-tls-verify**=_bool_
 
 Require HTTPS and verify certificates when talking to container source registry or daemon. Default to source registry setting.
 
@@ -145,11 +145,11 @@ Require HTTPS and verify certificates when talking to container source registry 
 
 Use certificates at _path_ (*.crt, *.cert, *.key) to connect to the destination registry or daemon.
 
-**--dest-no-creds** _bool-value_
+**--dest-no-creds**
 
 Access the registry anonymously.
 
-**--dest-tls-verify** _bool-value_
+**--dest-tls-verify**=_bool_
 
 Require HTTPS and verify certificates when talking to container destination registry or daemon. Default to destination registry setting.
 
@@ -179,7 +179,7 @@ Bearer token for accessing the source registry.
 
 Bearer token for accessing the destination registry.
 
-**--dest-precompute-digests** _bool-value_
+**--dest-precompute-digests**
 
 Precompute digests to ensure layers are not uploaded that already exist on the destination registry. Layers with initially unknown digests (ex. compressing "on the fly") will be temporarily streamed to disk.
 

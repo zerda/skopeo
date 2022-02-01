@@ -77,7 +77,7 @@ The username to access the registry.
 
 The password to access the registry.
 
-**--no-tags**, **-n**=_bool_
+**--no-tags**, **-n**
 
 Do not list the available tags from the repository in the output. When `true`, the `RepoTags` array will be empty.  Defaults to `false`, which includes all available tags.
 
