@@ -8,9 +8,12 @@ skopeo\-inspect - Return low-level information about _image-name_ in a registry.
 
 ## DESCRIPTION
 
-Return low-level information about _image-name_ in a registry
+Return low-level information about _image-name_ in a registry.
+See [skopeo(1)](skopeo.1.md) for the format of _image-name_.
 
-_image-name_ name of image to retrieve information about
+The default output includes data from various sources: user input (**Name**), the remote repository, if any (**RepoTags**), the top-level manifest (**Digest**),
+and a per-architecture/OS image matching the current run-time environment (most other values).
+To see values for a different architecture/OS, use the **--override-os** / **--override-arch** options documented in [skopeo(1)](skopeo.1.md).
 
 ## OPTIONS
 
