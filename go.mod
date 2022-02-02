@@ -3,8 +3,8 @@ module github.com/containers/skopeo
 go 1.12
 
 require (
-	github.com/containers/common v0.47.2
-	github.com/containers/image/v5 v5.19.0
+	github.com/containers/common v0.47.3
+	github.com/containers/image/v5 v5.19.1
 	github.com/containers/ocicrypt v1.1.2
 	github.com/containers/storage v1.38.2
 	github.com/docker/docker v20.10.12+incompatible
