@@ -125,6 +125,10 @@ function setup() {
     run podman --root $TESTDIR/podmanroot images
     expect_output --substring "mine"
 
+    # rootless cleanup needs to be done with unshare due to subuids
+    if [[ "$(id -u)" != "0" ]]; then
+        run podman unshare rm -rf $TESTDIR/podmanroot
+    fi
 }
 
 # shared blob directory
@@ -145,6 +149,8 @@ function setup() {
 }
 
 @test "copy: sif image" {
+    type -path fakeroot || skip "'fakeroot' tool not available"
+
     local localimg=dir:$TESTDIR/dir
 
     run_skopeo copy sif:${TEST_SOURCE_DIR}/testdata/busybox_latest.sif $localimg
