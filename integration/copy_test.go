@@ -1305,8 +1305,8 @@ func (s *SkopeoSuite) TestFailureCopySrcWithMirrorsUnavailable(c *check.C) {
 	dir, err := ioutil.TempDir("", "copy-mirror")
 	c.Assert(err, check.IsNil)
 
-	assertSkopeoFails(c, ".*no such host.*", "--registries-conf="+regConfFixture, "copy",
-		"docker://invalid.invalid/busybox", "dir:"+dir)
+	assertSkopeoFails(c, ".*no such host.*",
+		"--registries-conf="+regConfFixture, "copy", "docker://invalid.invalid/busybox", "dir:"+dir)
 }
 
 func (s *SkopeoSuite) TestSuccessCopySrcWithMirrorAndPrefix(c *check.C) {
@@ -1321,8 +1321,8 @@ func (s *SkopeoSuite) TestFailureCopySrcWithMirrorAndPrefixUnavailable(c *check.
 	dir, err := ioutil.TempDir("", "copy-mirror")
 	c.Assert(err, check.IsNil)
 
-	assertSkopeoFails(c, ".*no such host.*", "--registries-conf="+regConfFixture, "copy",
-		"docker://gcr.invalid/wrong/prefix/busybox", "dir:"+dir)
+	assertSkopeoFails(c, ".*no such host.*",
+		"--registries-conf="+regConfFixture, "copy", "docker://gcr.invalid/wrong/prefix/busybox", "dir:"+dir)
 }
 
 func (s *CopySuite) TestCopyFailsWhenReferenceIsInvalid(c *check.C) {
