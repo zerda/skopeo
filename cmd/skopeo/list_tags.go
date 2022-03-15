@@ -5,10 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"sort"
 	"strings"
 
 	"github.com/containers/common/pkg/retry"
 	"github.com/containers/image/v5/docker"
+	"github.com/containers/image/v5/docker/archive"
 	"github.com/containers/image/v5/docker/reference"
 	"github.com/containers/image/v5/transports/alltransports"
 	"github.com/containers/image/v5/types"
@@ -18,7 +20,7 @@ import (
 
 // tagListOutput is the output format of (skopeo list-tags), primarily so that we can format it with a simple json.MarshalIndent.
 type tagListOutput struct {
-	Repository string
+	Repository string `json:",omitempty"`
 	Tags       []string
 }
 
@@ -26,6 +28,21 @@ type tagsOptions struct {
 	global    *globalOptions
 	image     *imageOptions
 	retryOpts *retry.RetryOptions
+}
+
+var transportHandlers = map[string]func(ctx context.Context, sys *types.SystemContext, opts *tagsOptions, userInput string) (repositoryName string, tagListing []string, err error){
+	docker.Transport.Name():  listDockerRepoTags,
+	archive.Transport.Name(): listDockerArchiveTags,
+}
+
+// supportedTransports returns all the supported transports
+func supportedTransports(joinStr string) string {
+	res := make([]string, 0, len(transportHandlers))
+	for handlerName := range transportHandlers {
+		res = append(res, handlerName)
+	}
+	sort.Strings(res)
+	return strings.Join(res, joinStr)
 }
 
 func tagsCmd(global *globalOptions) *cobra.Command {
@@ -38,13 +55,14 @@ func tagsCmd(global *globalOptions) *cobra.Command {
 		image:     imageOpts,
 		retryOpts: retryOpts,
 	}
+
 	cmd := &cobra.Command{
-		Use:   "list-tags [command options] REPOSITORY-NAME",
-		Short: "List tags in the transport/repository specified by the REPOSITORY-NAME",
-		Long: `Return the list of tags from the transport/repository "REPOSITORY-NAME"
+		Use:   "list-tags [command options] SOURCE-IMAGE",
+		Short: "List tags in the transport/repository specified by the SOURCE-IMAGE",
+		Long: `Return the list of tags from the transport/repository "SOURCE-IMAGE"
 
 Supported transports:
-docker
+` + supportedTransports(" ") + `
 
 See skopeo-list-tags(1) section "REPOSITORY NAMES" for the expected format
 `,
@@ -95,6 +113,58 @@ func listDockerTags(ctx context.Context, sys *types.SystemContext, imgRef types.
 	return repositoryName, tags, nil
 }
 
+// return the tagLists from a docker repo
+func listDockerRepoTags(ctx context.Context, sys *types.SystemContext, opts *tagsOptions, userInput string) (repositoryName string, tagListing []string, err error) {
+	// Do transport-specific parsing and validation to get an image reference
+	imgRef, err := parseDockerRepositoryReference(userInput)
+	if err != nil {
+		return
+	}
+	if err = retry.RetryIfNecessary(ctx, func() error {
+		repositoryName, tagListing, err = listDockerTags(ctx, sys, imgRef)
+		return err
+	}, opts.retryOpts); err != nil {
+		return
+	}
+	return
+}
+
+// return the tagLists from a docker archive file
+func listDockerArchiveTags(ctx context.Context, sys *types.SystemContext, opts *tagsOptions, userInput string) (repositoryName string, tagListing []string, err error) {
+	ref, err := alltransports.ParseImageName(userInput)
+	if err != nil {
+		return
+	}
+
+	tarReader, _, err := archive.NewReaderForReference(sys, ref)
+	if err != nil {
+		return
+	}
+	defer tarReader.Close()
+
+	imageRefs, err := tarReader.List()
+	if err != nil {
+		return
+	}
+
+	var repoTags []string
+	for imageIndex, items := range imageRefs {
+		for _, ref := range items {
+			repoTags, err = tarReader.ManifestTagsForReference(ref)
+			if err != nil {
+				return
+			}
+			// handle for each untagged image
+			if len(repoTags) == 0 {
+				repoTags = []string{fmt.Sprintf("@%d", imageIndex)}
+			}
+			tagListing = append(tagListing, repoTags...)
+		}
+	}
+
+	return
+}
+
 func (opts *tagsOptions) run(args []string, stdout io.Writer) (retErr error) {
 	ctx, cancel := opts.global.commandTimeoutContext()
 	defer cancel()
@@ -113,23 +183,17 @@ func (opts *tagsOptions) run(args []string, stdout io.Writer) (retErr error) {
 		return fmt.Errorf("Invalid %q: does not specify a transport", args[0])
 	}
 
-	if transport.Name() != docker.Transport.Name() {
-		return fmt.Errorf("Unsupported transport '%v' for tag listing. Only '%v' currently supported", transport.Name(), docker.Transport.Name())
-	}
-
-	// Do transport-specific parsing and validation to get an image reference
-	imgRef, err := parseDockerRepositoryReference(args[0])
-	if err != nil {
-		return err
-	}
-
 	var repositoryName string
 	var tagListing []string
-	if err = retry.RetryIfNecessary(ctx, func() error {
-		repositoryName, tagListing, err = listDockerTags(ctx, sys, imgRef)
-		return err
-	}, opts.retryOpts); err != nil {
-		return err
+
+	if val, ok := transportHandlers[transport.Name()]; ok {
+		repositoryName, tagListing, err = val(ctx, sys, opts, args[0])
+		if err != nil {
+			return err
+		}
+	} else {
+		return fmt.Errorf("Unsupported transport '%s' for tag listing. Only supported: %s",
+			transport.Name(), supportedTransports(", "))
 	}
 
 	outputData := tagListOutput{
