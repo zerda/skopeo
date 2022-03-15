@@ -722,13 +722,17 @@ func (opts *proxyOptions) run(args []string, stdout io.Writer) error {
 		var req request
 		if err := json.Unmarshal(readbuf, &req); err != nil {
 			rb := replyBuf{}
-			rb.send(conn, fmt.Errorf("invalid request: %v", err))
+			if err := rb.send(conn, fmt.Errorf("invalid request: %v", err)); err != nil {
+				return fmt.Errorf("writing to socket: %w", err)
+			}
 		}
 
 		rb, terminate, err := handler.processRequest(req)
 		if terminate {
 			return nil
 		}
-		rb.send(conn, err)
+		if err := rb.send(conn, err); err != nil {
+			return fmt.Errorf("writing to socket: %w", err)
+		}
 	}
 }

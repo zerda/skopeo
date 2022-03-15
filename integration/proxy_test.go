@@ -285,6 +285,9 @@ func runTestGetManifestAndConfig(p *proxy, img string) error {
 	}
 
 	_, err = p.callNoFd("CloseImage", []interface{}{imgid})
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

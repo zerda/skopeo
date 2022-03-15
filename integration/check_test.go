@@ -36,12 +36,12 @@ func (s *SkopeoSuite) SetUpSuite(c *check.C) {
 
 func (s *SkopeoSuite) TearDownSuite(c *check.C) {
 	if s.regV2 != nil {
-		s.regV2.Close()
+		s.regV2.tearDown(c)
 	}
 	if s.regV2WithAuth != nil {
 		//cmd := exec.Command("docker", "logout", s.regV2WithAuth)
 		//c.Assert(cmd.Run(), check.IsNil)
-		s.regV2WithAuth.Close()
+		s.regV2WithAuth.tearDown(c)
 	}
 }
 

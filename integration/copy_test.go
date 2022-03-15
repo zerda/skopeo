@@ -86,10 +86,10 @@ func (s *CopySuite) TearDownSuite(c *check.C) {
 		os.RemoveAll(s.gpgHome)
 	}
 	if s.registry != nil {
-		s.registry.Close()
+		s.registry.tearDown(c)
 	}
 	if s.s1Registry != nil {
-		s.s1Registry.Close()
+		s.s1Registry.tearDown(c)
 	}
 	if s.cluster != nil {
 		s.cluster.tearDown(c)

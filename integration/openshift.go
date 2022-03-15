@@ -258,12 +258,16 @@ func (cluster *openshiftCluster) relaxImageSignerPermissions(c *check.C) {
 // tearDown stops the cluster services and deletes (only some!) of the state.
 func (cluster *openshiftCluster) tearDown(c *check.C) {
 	for i := len(cluster.processes) - 1; i >= 0; i-- {
-		cluster.processes[i].Process.Kill()
+		// It’s undocumented what Kill() returns if the process has terminated,
+		// so we couldn’t check just for that. This is running in a container anyway…
+		_ = cluster.processes[i].Process.Kill()
 	}
 	if cluster.workingDir != "" {
-		os.RemoveAll(cluster.workingDir)
+		err := os.RemoveAll(cluster.workingDir)
+		c.Assert(err, check.IsNil)
 	}
 	if cluster.dockerDir != "" {
-		os.RemoveAll(cluster.dockerDir)
+		err := os.RemoveAll(cluster.dockerDir)
+		c.Assert(err, check.IsNil)
 	}
 }
