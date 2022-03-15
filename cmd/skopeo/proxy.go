@@ -664,7 +664,14 @@ func proxyCmd(global *globalOptions) *cobra.Command {
 // processRequest dispatches a remote request.
 // replyBuf is the result of the invocation.
 // terminate should be true if processing of requests should halt.
-func (h *proxyHandler) processRequest(req request) (rb replyBuf, terminate bool, err error) {
+func (h *proxyHandler) processRequest(readBytes []byte) (rb replyBuf, terminate bool, err error) {
+	var req request
+
+	// Parse the request JSON
+	if err = json.Unmarshal(readBytes, &req); err != nil {
+		err = fmt.Errorf("invalid request: %v", err)
+		return
+	}
 	// Dispatch on the method
 	switch req.Method {
 	case "Initialize":
@@ -717,20 +724,13 @@ func (opts *proxyOptions) run(args []string, stdout io.Writer) error {
 			}
 			return fmt.Errorf("reading socket: %v", err)
 		}
-		// Parse the request JSON
 		readbuf := buf[0:n]
-		var req request
-		if err := json.Unmarshal(readbuf, &req); err != nil {
-			rb := replyBuf{}
-			if err := rb.send(conn, fmt.Errorf("invalid request: %v", err)); err != nil {
-				return fmt.Errorf("writing to socket: %w", err)
-			}
-		}
 
-		rb, terminate, err := handler.processRequest(req)
+		rb, terminate, err := handler.processRequest(readbuf)
 		if terminate {
 			return nil
 		}
+
 		if err := rb.send(conn, err); err != nil {
 			return fmt.Errorf("writing to socket: %w", err)
 		}
