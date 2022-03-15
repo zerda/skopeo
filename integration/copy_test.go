@@ -64,9 +64,7 @@ func (s *CopySuite) SetUpSuite(c *check.C) {
 	s.registry = setupRegistryV2At(c, v2DockerRegistryURL, false, false)
 	s.s1Registry = setupRegistryV2At(c, v2s1DockerRegistryURL, false, true)
 
-	gpgHome, err := ioutil.TempDir("", "skopeo-gpg")
-	c.Assert(err, check.IsNil)
-	s.gpgHome = gpgHome
+	s.gpgHome = c.MkDir()
 	os.Setenv("GNUPGHOME", s.gpgHome)
 
 	for _, key := range []string{"personal", "official"} {
@@ -82,9 +80,6 @@ func (s *CopySuite) SetUpSuite(c *check.C) {
 }
 
 func (s *CopySuite) TearDownSuite(c *check.C) {
-	if s.gpgHome != "" {
-		os.RemoveAll(s.gpgHome)
-	}
 	if s.registry != nil {
 		s.registry.tearDown(c)
 	}
@@ -97,32 +92,20 @@ func (s *CopySuite) TearDownSuite(c *check.C) {
 }
 
 func (s *CopySuite) TestCopyWithManifestList(c *check.C) {
-	dir, err := ioutil.TempDir("", "copy-manifest-list")
-	c.Assert(err, check.IsNil)
-	defer os.RemoveAll(dir)
+	dir := c.MkDir()
 	assertSkopeoSucceeds(c, "", "copy", knownListImage, "dir:"+dir)
 }
 
 func (s *CopySuite) TestCopyAllWithManifestList(c *check.C) {
-	dir, err := ioutil.TempDir("", "copy-all-manifest-list")
-	c.Assert(err, check.IsNil)
-	defer os.RemoveAll(dir)
+	dir := c.MkDir()
 	assertSkopeoSucceeds(c, "", "copy", "--all", knownListImage, "dir:"+dir)
 }
 
 func (s *CopySuite) TestCopyAllWithManifestListRoundTrip(c *check.C) {
-	oci1, err := ioutil.TempDir("", "copy-all-manifest-list-oci")
-	c.Assert(err, check.IsNil)
-	defer os.RemoveAll(oci1)
-	oci2, err := ioutil.TempDir("", "copy-all-manifest-list-oci")
-	c.Assert(err, check.IsNil)
-	defer os.RemoveAll(oci2)
-	dir1, err := ioutil.TempDir("", "copy-all-manifest-list-dir")
-	c.Assert(err, check.IsNil)
-	defer os.RemoveAll(dir1)
-	dir2, err := ioutil.TempDir("", "copy-all-manifest-list-dir")
-	c.Assert(err, check.IsNil)
-	defer os.RemoveAll(dir2)
+	oci1 := c.MkDir()
+	oci2 := c.MkDir()
+	dir1 := c.MkDir()
+	dir2 := c.MkDir()
 	assertSkopeoSucceeds(c, "", "copy", "--multi-arch=all", knownListImage, "oci:"+oci1)
 	assertSkopeoSucceeds(c, "", "copy", "--multi-arch=all", "oci:"+oci1, "dir:"+dir1)
 	assertSkopeoSucceeds(c, "", "copy", "--multi-arch=all", "dir:"+dir1, "oci:"+oci2)
@@ -133,18 +116,10 @@ func (s *CopySuite) TestCopyAllWithManifestListRoundTrip(c *check.C) {
 }
 
 func (s *CopySuite) TestCopyAllWithManifestListConverge(c *check.C) {
-	oci1, err := ioutil.TempDir("", "copy-all-manifest-list-oci")
-	c.Assert(err, check.IsNil)
-	defer os.RemoveAll(oci1)
-	oci2, err := ioutil.TempDir("", "copy-all-manifest-list-oci")
-	c.Assert(err, check.IsNil)
-	defer os.RemoveAll(oci2)
-	dir1, err := ioutil.TempDir("", "copy-all-manifest-list-dir")
-	c.Assert(err, check.IsNil)
-	defer os.RemoveAll(dir1)
-	dir2, err := ioutil.TempDir("", "copy-all-manifest-list-dir")
-	c.Assert(err, check.IsNil)
-	defer os.RemoveAll(dir2)
+	oci1 := c.MkDir()
+	oci2 := c.MkDir()
+	dir1 := c.MkDir()
+	dir2 := c.MkDir()
 	assertSkopeoSucceeds(c, "", "copy", "--multi-arch=all", knownListImage, "oci:"+oci1)
 	assertSkopeoSucceeds(c, "", "copy", "--multi-arch=all", "oci:"+oci1, "dir:"+dir1)
 	assertSkopeoSucceeds(c, "", "copy", "--multi-arch=all", "--format", "oci", knownListImage, "dir:"+dir2)
@@ -155,9 +130,7 @@ func (s *CopySuite) TestCopyAllWithManifestListConverge(c *check.C) {
 }
 
 func (s *CopySuite) TestCopyNoneWithManifestList(c *check.C) {
-	dir1, err := ioutil.TempDir("", "copy-all-manifest-list-dir")
-	c.Assert(err, check.IsNil)
-	defer os.RemoveAll(dir1)
+	dir1 := c.MkDir()
 	assertSkopeoSucceeds(c, "", "copy", "--multi-arch=index-only", knownListImage, "dir:"+dir1)
 
 	manifestPath := filepath.Join(dir1, "manifest.json")
@@ -170,18 +143,10 @@ func (s *CopySuite) TestCopyNoneWithManifestList(c *check.C) {
 }
 
 func (s *CopySuite) TestCopyWithManifestListConverge(c *check.C) {
-	oci1, err := ioutil.TempDir("", "copy-all-manifest-list-oci")
-	c.Assert(err, check.IsNil)
-	defer os.RemoveAll(oci1)
-	oci2, err := ioutil.TempDir("", "copy-all-manifest-list-oci")
-	c.Assert(err, check.IsNil)
-	defer os.RemoveAll(oci2)
-	dir1, err := ioutil.TempDir("", "copy-all-manifest-list-dir")
-	c.Assert(err, check.IsNil)
-	defer os.RemoveAll(dir1)
-	dir2, err := ioutil.TempDir("", "copy-all-manifest-list-dir")
-	c.Assert(err, check.IsNil)
-	defer os.RemoveAll(dir2)
+	oci1 := c.MkDir()
+	oci2 := c.MkDir()
+	dir1 := c.MkDir()
+	dir2 := c.MkDir()
 	assertSkopeoSucceeds(c, "", "copy", knownListImage, "oci:"+oci1)
 	assertSkopeoSucceeds(c, "", "copy", "--multi-arch=all", "oci:"+oci1, "dir:"+dir1)
 	assertSkopeoSucceeds(c, "", "copy", "--format", "oci", knownListImage, "dir:"+dir2)
@@ -192,24 +157,16 @@ func (s *CopySuite) TestCopyWithManifestListConverge(c *check.C) {
 }
 
 func (s *CopySuite) TestCopyAllWithManifestListStorageFails(c *check.C) {
-	storage, err := ioutil.TempDir("", "copy-storage")
-	c.Assert(err, check.IsNil)
-	defer os.RemoveAll(storage)
+	storage := c.MkDir()
 	storage = fmt.Sprintf("[vfs@%s/root+%s/runroot]", storage, storage)
 	assertSkopeoFails(c, `.*destination transport .* does not support copying multiple images as a group.*`, "copy", "--multi-arch=all", knownListImage, "containers-storage:"+storage+"test")
 }
 
 func (s *CopySuite) TestCopyWithManifestListStorage(c *check.C) {
-	storage, err := ioutil.TempDir("", "copy-manifest-list-storage")
-	c.Assert(err, check.IsNil)
-	defer os.RemoveAll(storage)
+	storage := c.MkDir()
 	storage = fmt.Sprintf("[vfs@%s/root+%s/runroot]", storage, storage)
-	dir1, err := ioutil.TempDir("", "copy-manifest-list-storage-dir")
-	c.Assert(err, check.IsNil)
-	defer os.RemoveAll(dir1)
-	dir2, err := ioutil.TempDir("", "copy-manifest-list-storage-dir")
-	c.Assert(err, check.IsNil)
-	defer os.RemoveAll(dir2)
+	dir1 := c.MkDir()
+	dir2 := c.MkDir()
 	assertSkopeoSucceeds(c, "", "copy", knownListImage, "containers-storage:"+storage+"test")
 	assertSkopeoSucceeds(c, "", "copy", knownListImage, "dir:"+dir1)
 	assertSkopeoSucceeds(c, "", "copy", "containers-storage:"+storage+"test", "dir:"+dir2)
@@ -218,16 +175,10 @@ func (s *CopySuite) TestCopyWithManifestListStorage(c *check.C) {
 }
 
 func (s *CopySuite) TestCopyWithManifestListStorageMultiple(c *check.C) {
-	storage, err := ioutil.TempDir("", "copy-manifest-list-storage-multiple")
-	c.Assert(err, check.IsNil)
-	defer os.RemoveAll(storage)
+	storage := c.MkDir()
 	storage = fmt.Sprintf("[vfs@%s/root+%s/runroot]", storage, storage)
-	dir1, err := ioutil.TempDir("", "copy-manifest-list-storage-multiple-dir")
-	c.Assert(err, check.IsNil)
-	defer os.RemoveAll(dir1)
-	dir2, err := ioutil.TempDir("", "copy-manifest-list-storage-multiple-dir")
-	c.Assert(err, check.IsNil)
-	defer os.RemoveAll(dir2)
+	dir1 := c.MkDir()
+	dir2 := c.MkDir()
 	assertSkopeoSucceeds(c, "", "--override-arch", "amd64", "copy", knownListImage, "containers-storage:"+storage+"test")
 	assertSkopeoSucceeds(c, "", "--override-arch", "arm64", "copy", knownListImage, "containers-storage:"+storage+"test")
 	assertSkopeoSucceeds(c, "", "--override-arch", "arm64", "copy", knownListImage, "dir:"+dir1)
@@ -237,18 +188,10 @@ func (s *CopySuite) TestCopyWithManifestListStorageMultiple(c *check.C) {
 }
 
 func (s *CopySuite) TestCopyWithManifestListDigest(c *check.C) {
-	dir1, err := ioutil.TempDir("", "copy-manifest-list-digest-dir")
-	c.Assert(err, check.IsNil)
-	defer os.RemoveAll(dir1)
-	dir2, err := ioutil.TempDir("", "copy-manifest-list-digest-dir")
-	c.Assert(err, check.IsNil)
-	defer os.RemoveAll(dir2)
-	oci1, err := ioutil.TempDir("", "copy-manifest-list-digest-oci")
-	c.Assert(err, check.IsNil)
-	defer os.RemoveAll(oci1)
-	oci2, err := ioutil.TempDir("", "copy-manifest-list-digest-oci")
-	c.Assert(err, check.IsNil)
-	defer os.RemoveAll(oci2)
+	dir1 := c.MkDir()
+	dir2 := c.MkDir()
+	oci1 := c.MkDir()
+	oci2 := c.MkDir()
 	m := combinedOutputOfCommand(c, skopeoBinary, "inspect", "--raw", knownListImage)
 	manifestDigest, err := manifest.Digest([]byte(m))
 	c.Assert(err, check.IsNil)
@@ -262,12 +205,8 @@ func (s *CopySuite) TestCopyWithManifestListDigest(c *check.C) {
 }
 
 func (s *CopySuite) TestCopyWithDigestfileOutput(c *check.C) {
-	tempdir, err := ioutil.TempDir("", "tempdir")
-	c.Assert(err, check.IsNil)
-	defer os.RemoveAll(tempdir)
-	dir1, err := ioutil.TempDir("", "copy-manifest-list-digest-dir")
-	c.Assert(err, check.IsNil)
-	defer os.RemoveAll(dir1)
+	tempdir := c.MkDir()
+	dir1 := c.MkDir()
 	digestOutPath := filepath.Join(tempdir, "digest.txt")
 	assertSkopeoSucceeds(c, "", "copy", "--digestfile="+digestOutPath, knownListImage, "dir:"+dir1)
 	readDigest, err := ioutil.ReadFile(digestOutPath)
@@ -277,16 +216,10 @@ func (s *CopySuite) TestCopyWithDigestfileOutput(c *check.C) {
 }
 
 func (s *CopySuite) TestCopyWithManifestListStorageDigest(c *check.C) {
-	storage, err := ioutil.TempDir("", "copy-manifest-list-storage-digest")
-	c.Assert(err, check.IsNil)
-	defer os.RemoveAll(storage)
+	storage := c.MkDir()
 	storage = fmt.Sprintf("[vfs@%s/root+%s/runroot]", storage, storage)
-	dir1, err := ioutil.TempDir("", "copy-manifest-list-storage-digest-dir")
-	c.Assert(err, check.IsNil)
-	defer os.RemoveAll(dir1)
-	dir2, err := ioutil.TempDir("", "copy-manifest-list-storage-digest-dir")
-	c.Assert(err, check.IsNil)
-	defer os.RemoveAll(dir2)
+	dir1 := c.MkDir()
+	dir2 := c.MkDir()
 	m := combinedOutputOfCommand(c, skopeoBinary, "inspect", "--raw", knownListImage)
 	manifestDigest, err := manifest.Digest([]byte(m))
 	c.Assert(err, check.IsNil)
@@ -299,16 +232,10 @@ func (s *CopySuite) TestCopyWithManifestListStorageDigest(c *check.C) {
 }
 
 func (s *CopySuite) TestCopyWithManifestListStorageDigestMultipleArches(c *check.C) {
-	storage, err := ioutil.TempDir("", "copy-manifest-list-storage-digest")
-	c.Assert(err, check.IsNil)
-	defer os.RemoveAll(storage)
+	storage := c.MkDir()
 	storage = fmt.Sprintf("[vfs@%s/root+%s/runroot]", storage, storage)
-	dir1, err := ioutil.TempDir("", "copy-manifest-list-storage-digest-dir")
-	c.Assert(err, check.IsNil)
-	defer os.RemoveAll(dir1)
-	dir2, err := ioutil.TempDir("", "copy-manifest-list-storage-digest-dir")
-	c.Assert(err, check.IsNil)
-	defer os.RemoveAll(dir2)
+	dir1 := c.MkDir()
+	dir2 := c.MkDir()
 	m := combinedOutputOfCommand(c, skopeoBinary, "inspect", "--raw", knownListImage)
 	manifestDigest, err := manifest.Digest([]byte(m))
 	c.Assert(err, check.IsNil)
@@ -321,9 +248,7 @@ func (s *CopySuite) TestCopyWithManifestListStorageDigestMultipleArches(c *check
 }
 
 func (s *CopySuite) TestCopyWithManifestListStorageDigestMultipleArchesBothUseListDigest(c *check.C) {
-	storage, err := ioutil.TempDir("", "copy-manifest-list-storage-digest-multiple-arches-both")
-	c.Assert(err, check.IsNil)
-	defer os.RemoveAll(storage)
+	storage := c.MkDir()
 	storage = fmt.Sprintf("[vfs@%s/root+%s/runroot]", storage, storage)
 	m := combinedOutputOfCommand(c, skopeoBinary, "inspect", "--raw", knownListImage)
 	manifestDigest, err := manifest.Digest([]byte(m))
@@ -343,9 +268,7 @@ func (s *CopySuite) TestCopyWithManifestListStorageDigestMultipleArchesBothUseLi
 }
 
 func (s *CopySuite) TestCopyWithManifestListStorageDigestMultipleArchesFirstUsesListDigest(c *check.C) {
-	storage, err := ioutil.TempDir("", "copy-manifest-list-storage-digest-multiple-arches-first")
-	c.Assert(err, check.IsNil)
-	defer os.RemoveAll(storage)
+	storage := c.MkDir()
 	storage = fmt.Sprintf("[vfs@%s/root+%s/runroot]", storage, storage)
 	m := combinedOutputOfCommand(c, skopeoBinary, "inspect", "--raw", knownListImage)
 	manifestDigest, err := manifest.Digest([]byte(m))
@@ -379,9 +302,7 @@ func (s *CopySuite) TestCopyWithManifestListStorageDigestMultipleArchesFirstUses
 }
 
 func (s *CopySuite) TestCopyWithManifestListStorageDigestMultipleArchesSecondUsesListDigest(c *check.C) {
-	storage, err := ioutil.TempDir("", "copy-manifest-list-storage-digest-multiple-arches-second")
-	c.Assert(err, check.IsNil)
-	defer os.RemoveAll(storage)
+	storage := c.MkDir()
 	storage = fmt.Sprintf("[vfs@%s/root+%s/runroot]", storage, storage)
 	m := combinedOutputOfCommand(c, skopeoBinary, "inspect", "--raw", knownListImage)
 	manifestDigest, err := manifest.Digest([]byte(m))
@@ -415,9 +336,7 @@ func (s *CopySuite) TestCopyWithManifestListStorageDigestMultipleArchesSecondUse
 }
 
 func (s *CopySuite) TestCopyWithManifestListStorageDigestMultipleArchesThirdUsesListDigest(c *check.C) {
-	storage, err := ioutil.TempDir("", "copy-manifest-list-storage-digest-multiple-arches-third")
-	c.Assert(err, check.IsNil)
-	defer os.RemoveAll(storage)
+	storage := c.MkDir()
 	storage = fmt.Sprintf("[vfs@%s/root+%s/runroot]", storage, storage)
 	m := combinedOutputOfCommand(c, skopeoBinary, "inspect", "--raw", knownListImage)
 	manifestDigest, err := manifest.Digest([]byte(m))
@@ -451,9 +370,7 @@ func (s *CopySuite) TestCopyWithManifestListStorageDigestMultipleArchesThirdUses
 }
 
 func (s *CopySuite) TestCopyWithManifestListStorageDigestMultipleArchesTagAndDigest(c *check.C) {
-	storage, err := ioutil.TempDir("", "copy-manifest-list-storage-digest-multiple-arches-tag-digest")
-	c.Assert(err, check.IsNil)
-	defer os.RemoveAll(storage)
+	storage := c.MkDir()
 	storage = fmt.Sprintf("[vfs@%s/root+%s/runroot]", storage, storage)
 	m := combinedOutputOfCommand(c, skopeoBinary, "inspect", "--raw", knownListImage)
 	manifestDigest, err := manifest.Digest([]byte(m))
@@ -496,28 +413,20 @@ func (s *CopySuite) TestCopyWithManifestListStorageDigestMultipleArchesTagAndDig
 }
 
 func (s *CopySuite) TestCopyFailsWhenImageOSDoesNotMatchRuntimeOS(c *check.C) {
-	storage, err := ioutil.TempDir("", "copy-fails-image-does-not-match-runtime")
-	c.Assert(err, check.IsNil)
-	defer os.RemoveAll(storage)
+	storage := c.MkDir()
 	storage = fmt.Sprintf("[vfs@%s/root+%s/runroot]", storage, storage)
 	assertSkopeoFails(c, `.*no image found in manifest list for architecture .*, variant .*, OS .*`, "copy", knownWindowsOnlyImage, "containers-storage:"+storage+"test")
 }
 
 func (s *CopySuite) TestCopySucceedsWhenImageDoesNotMatchRuntimeButWeOverride(c *check.C) {
-	storage, err := ioutil.TempDir("", "copy-succeeds-image-does-not-match-runtime-but-override")
-	c.Assert(err, check.IsNil)
-	defer os.RemoveAll(storage)
+	storage := c.MkDir()
 	storage = fmt.Sprintf("[vfs@%s/root+%s/runroot]", storage, storage)
 	assertSkopeoSucceeds(c, "", "--override-os=windows", "--override-arch=amd64", "copy", knownWindowsOnlyImage, "containers-storage:"+storage+"test")
 }
 
 func (s *CopySuite) TestCopySimpleAtomicRegistry(c *check.C) {
-	dir1, err := ioutil.TempDir("", "copy-1")
-	c.Assert(err, check.IsNil)
-	defer os.RemoveAll(dir1)
-	dir2, err := ioutil.TempDir("", "copy-2")
-	c.Assert(err, check.IsNil)
-	defer os.RemoveAll(dir2)
+	dir1 := c.MkDir()
+	dir2 := c.MkDir()
 
 	// FIXME: It would be nice to use one of the local Docker registries instead of needing an Internet connection.
 	// "pull": docker: → dir:
@@ -533,12 +442,8 @@ func (s *CopySuite) TestCopySimpleAtomicRegistry(c *check.C) {
 func (s *CopySuite) TestCopySimple(c *check.C) {
 	const ourRegistry = "docker://" + v2DockerRegistryURL + "/"
 
-	dir1, err := ioutil.TempDir("", "copy-1")
-	c.Assert(err, check.IsNil)
-	defer os.RemoveAll(dir1)
-	dir2, err := ioutil.TempDir("", "copy-2")
-	c.Assert(err, check.IsNil)
-	defer os.RemoveAll(dir2)
+	dir1 := c.MkDir()
+	dir2 := c.MkDir()
 
 	// FIXME: It would be nice to use one of the local Docker registries instead of needing an Internet connection.
 	// "pull": docker: → dir:
@@ -557,7 +462,7 @@ func (s *CopySuite) TestCopySimple(c *check.C) {
 	ociImgName := "pause"
 	defer os.RemoveAll(ociDest)
 	assertSkopeoSucceeds(c, "", "copy", "docker://k8s.gcr.io/pause:latest", "oci:"+ociDest+":"+ociImgName)
-	_, err = os.Stat(ociDest)
+	_, err := os.Stat(ociDest)
 	c.Assert(err, check.IsNil)
 
 	// docker v2s2 -> OCI image layout without image name
@@ -569,31 +474,14 @@ func (s *CopySuite) TestCopySimple(c *check.C) {
 }
 
 func (s *CopySuite) TestCopyEncryption(c *check.C) {
-
-	originalImageDir, err := ioutil.TempDir("", "copy-1")
-	c.Assert(err, check.IsNil)
-	defer os.RemoveAll(originalImageDir)
-	encryptedImgDir, err := ioutil.TempDir("", "copy-2")
-	c.Assert(err, check.IsNil)
-	defer os.RemoveAll(encryptedImgDir)
-	decryptedImgDir, err := ioutil.TempDir("", "copy-3")
-	c.Assert(err, check.IsNil)
-	defer os.RemoveAll(decryptedImgDir)
-	keysDir, err := ioutil.TempDir("", "copy-4")
-	c.Assert(err, check.IsNil)
-	defer os.RemoveAll(keysDir)
-	undecryptedImgDir, err := ioutil.TempDir("", "copy-5")
-	c.Assert(err, check.IsNil)
-	defer os.RemoveAll(undecryptedImgDir)
-	multiLayerImageDir, err := ioutil.TempDir("", "copy-6")
-	c.Assert(err, check.IsNil)
-	defer os.RemoveAll(multiLayerImageDir)
-	partiallyEncryptedImgDir, err := ioutil.TempDir("", "copy-7")
-	c.Assert(err, check.IsNil)
-	defer os.RemoveAll(partiallyEncryptedImgDir)
-	partiallyDecryptedImgDir, err := ioutil.TempDir("", "copy-8")
-	c.Assert(err, check.IsNil)
-	defer os.RemoveAll(partiallyDecryptedImgDir)
+	originalImageDir := c.MkDir()
+	encryptedImgDir := c.MkDir()
+	decryptedImgDir := c.MkDir()
+	keysDir := c.MkDir()
+	undecryptedImgDir := c.MkDir()
+	multiLayerImageDir := c.MkDir()
+	partiallyEncryptedImgDir := c.MkDir()
+	partiallyDecryptedImgDir := c.MkDir()
 
 	// Create RSA key pair
 	privateKey, err := rsa.GenerateKey(rand.Reader, 4096)
@@ -745,12 +633,8 @@ func assertSchema1DirImagesAreEqualExceptNames(c *check.C, dir1, ref1, dir2, ref
 
 // Streaming (skopeo copy)
 func (s *CopySuite) TestCopyStreaming(c *check.C) {
-	dir1, err := ioutil.TempDir("", "streaming-1")
-	c.Assert(err, check.IsNil)
-	defer os.RemoveAll(dir1)
-	dir2, err := ioutil.TempDir("", "streaming-2")
-	c.Assert(err, check.IsNil)
-	defer os.RemoveAll(dir2)
+	dir1 := c.MkDir()
+	dir2 := c.MkDir()
 
 	// FIXME: It would be nice to use one of the local Docker registries instead of needing an Internet connection.
 	// streaming: docker: → atomic:
@@ -770,12 +654,8 @@ func (s *CopySuite) TestCopyStreaming(c *check.C) {
 func (s *CopySuite) TestCopyOCIRoundTrip(c *check.C) {
 	const ourRegistry = "docker://" + v2DockerRegistryURL + "/"
 
-	oci1, err := ioutil.TempDir("", "oci-1")
-	c.Assert(err, check.IsNil)
-	defer os.RemoveAll(oci1)
-	oci2, err := ioutil.TempDir("", "oci-2")
-	c.Assert(err, check.IsNil)
-	defer os.RemoveAll(oci2)
+	oci1 := c.MkDir()
+	oci2 := c.MkDir()
 
 	// Docker -> OCI
 	assertSkopeoSucceeds(c, "", "--tls-verify=false", "--debug", "copy", testFQIN, "oci:"+oci1+":latest")
@@ -798,7 +678,7 @@ func (s *CopySuite) TestCopyOCIRoundTrip(c *check.C) {
 	// Verify using the upstream OCI image validator, this should catch most
 	// non-compliance errors. DO NOT REMOVE THIS TEST UNLESS IT'S ABSOLUTELY
 	// NECESSARY.
-	err = image.ValidateLayout(oci1, nil, logger)
+	err := image.ValidateLayout(oci1, nil, logger)
 	c.Assert(err, check.IsNil)
 	err = image.ValidateLayout(oci2, nil, logger)
 	c.Assert(err, check.IsNil)
@@ -820,9 +700,7 @@ func (s *CopySuite) TestCopySignatures(c *check.C) {
 		c.Skip(fmt.Sprintf("Signing not supported: %v", err))
 	}
 
-	dir, err := ioutil.TempDir("", "signatures-dest")
-	c.Assert(err, check.IsNil)
-	defer os.RemoveAll(dir)
+	dir := c.MkDir()
 	dirDest := "dir:" + dir
 
 	policy := fileFromFixture(c, "fixtures/policy.json", map[string]string{"@keydir@": s.gpgHome})
@@ -876,9 +754,7 @@ func (s *CopySuite) TestCopyDirSignatures(c *check.C) {
 		c.Skip(fmt.Sprintf("Signing not supported: %v", err))
 	}
 
-	topDir, err := ioutil.TempDir("", "dir-signatures-top")
-	c.Assert(err, check.IsNil)
-	defer os.RemoveAll(topDir)
+	topDir := c.MkDir()
 	topDirDest := "dir:" + topDir
 
 	for _, suffix := range []string{"/dir1", "/dir2", "/restricted/personal", "/restricted/official", "/restricted/badidentity", "/dest"} {
@@ -921,9 +797,7 @@ func (s *CopySuite) TestCopyDirSignatures(c *check.C) {
 func (s *CopySuite) TestCopyCompression(c *check.C) {
 	const uncompresssedLayerFile = "160d823fdc48e62f97ba62df31e55424f8f5eb6b679c865eec6e59adfe304710"
 
-	topDir, err := ioutil.TempDir("", "compression-top")
-	c.Assert(err, check.IsNil)
-	defer os.RemoveAll(topDir)
+	topDir := c.MkDir()
 
 	for i, t := range []struct{ fixture, remote string }{
 		{"uncompressed-image-s1", "docker://" + v2DockerRegistryURL + "/compression/compression:s1"},
@@ -982,9 +856,7 @@ func (s *CopySuite) TestCopyDockerSigstore(c *check.C) {
 
 	const ourRegistry = "docker://" + v2DockerRegistryURL + "/"
 
-	tmpDir, err := ioutil.TempDir("", "signatures-sigstore")
-	c.Assert(err, check.IsNil)
-	defer os.RemoveAll(tmpDir)
+	tmpDir := c.MkDir()
 	copyDest := filepath.Join(tmpDir, "dest")
 	err = os.Mkdir(copyDest, 0755)
 	c.Assert(err, check.IsNil)
@@ -1050,9 +922,7 @@ func (s *CopySuite) TestCopyAtomicExtension(c *check.C) {
 		c.Skip(fmt.Sprintf("Signing not supported: %v", err))
 	}
 
-	topDir, err := ioutil.TempDir("", "atomic-extension")
-	c.Assert(err, check.IsNil)
-	defer os.RemoveAll(topDir)
+	topDir := c.MkDir()
 	for _, subdir := range []string{"dirAA", "dirAD", "dirDA", "dirDD", "registries.d"} {
 		err := os.MkdirAll(filepath.Join(topDir, subdir), 0755)
 		c.Assert(err, check.IsNil)
@@ -1102,9 +972,7 @@ func (s *CopySuite) TestCopyAtomicExtension(c *check.C) {
 // copyWithSignedIdentity creates a copy of an unsigned image, adding a signature for an unrelated identity
 // This should be easier than using standalone-sign.
 func copyWithSignedIdentity(c *check.C, src, dest, signedIdentity, signBy, registriesDir string) {
-	topDir, err := ioutil.TempDir("", "copyWithSignedIdentity")
-	c.Assert(err, check.IsNil)
-	defer os.RemoveAll(topDir)
+	topDir := c.MkDir()
 
 	signingDir := filepath.Join(topDir, "signing-temp")
 	assertSkopeoSucceeds(c, "", "copy", "--src-tls-verify=false", src, "dir:"+signingDir)
@@ -1126,9 +994,7 @@ func (s *CopySuite) TestCopyVerifyingMirroredSignatures(c *check.C) {
 		c.Skip(fmt.Sprintf("Signing not supported: %v", err))
 	}
 
-	topDir, err := ioutil.TempDir("", "mirrored-signatures")
-	c.Assert(err, check.IsNil)
-	defer os.RemoveAll(topDir)
+	topDir := c.MkDir()
 	registriesDir := filepath.Join(topDir, "registries.d") // An empty directory to disable sigstore use
 	dirDest := "dir:" + filepath.Join(topDir, "unused-dest")
 
@@ -1189,9 +1055,7 @@ func (s *CopySuite) TestCopyVerifyingMirroredSignatures(c *check.C) {
 
 func (s *SkopeoSuite) TestCopySrcWithAuth(c *check.C) {
 	assertSkopeoSucceeds(c, "", "--tls-verify=false", "copy", "--dest-creds=testuser:testpassword", testFQIN, fmt.Sprintf("docker://%s/busybox:latest", s.regV2WithAuth.url))
-	dir1, err := ioutil.TempDir("", "copy-1")
-	c.Assert(err, check.IsNil)
-	defer os.RemoveAll(dir1)
+	dir1 := c.MkDir()
 	assertSkopeoSucceeds(c, "", "--tls-verify=false", "copy", "--src-creds=testuser:testpassword", fmt.Sprintf("docker://%s/busybox:latest", s.regV2WithAuth.url), "dir:"+dir1)
 }
 
@@ -1205,9 +1069,7 @@ func (s *SkopeoSuite) TestCopySrcAndDestWithAuth(c *check.C) {
 }
 
 func (s *CopySuite) TestCopyNoPanicOnHTTPResponseWithoutTLSVerifyFalse(c *check.C) {
-	topDir, err := ioutil.TempDir("", "no-panic-on-https-response-without-tls-verify-false")
-	c.Assert(err, check.IsNil)
-	defer os.RemoveAll(topDir)
+	topDir := c.MkDir()
 
 	const ourRegistry = "docker://" + v2DockerRegistryURL + "/"
 
@@ -1223,9 +1085,7 @@ func (s *CopySuite) TestCopySchemaConversion(c *check.C) {
 }
 
 func (s *CopySuite) TestCopyManifestConversion(c *check.C) {
-	topDir, err := ioutil.TempDir("", "manifest-conversion")
-	c.Assert(err, check.IsNil)
-	defer os.RemoveAll(topDir)
+	topDir := c.MkDir()
 	srcDir := filepath.Join(topDir, "source")
 	destDir1 := filepath.Join(topDir, "dest1")
 	destDir2 := filepath.Join(topDir, "dest2")
@@ -1249,18 +1109,14 @@ func (s *CopySuite) TestCopyManifestConversion(c *check.C) {
 }
 
 func (s *CopySuite) TestCopyPreserveDigests(c *check.C) {
-	topDir, err := ioutil.TempDir("", "preserve-digests")
-	c.Assert(err, check.IsNil)
-	defer os.RemoveAll(topDir)
+	topDir := c.MkDir()
 
 	assertSkopeoSucceeds(c, "", "copy", knownListImage, "--multi-arch=all", "--preserve-digests", "dir:"+topDir)
 	assertSkopeoFails(c, ".*Instructed to preserve digests.*", "copy", knownListImage, "--multi-arch=all", "--preserve-digests", "--format=oci", "dir:"+topDir)
 }
 
 func (s *CopySuite) testCopySchemaConversionRegistries(c *check.C, schema1Registry, schema2Registry string) {
-	topDir, err := ioutil.TempDir("", "schema-conversion")
-	c.Assert(err, check.IsNil)
-	defer os.RemoveAll(topDir)
+	topDir := c.MkDir()
 	for _, subdir := range []string{"input1", "input2", "dest2"} {
 		err := os.MkdirAll(filepath.Join(topDir, subdir), 0755)
 		c.Assert(err, check.IsNil)
@@ -1294,16 +1150,14 @@ func (s *CopySuite) testCopySchemaConversionRegistries(c *check.C, schema1Regist
 const regConfFixture = "./fixtures/registries.conf"
 
 func (s *SkopeoSuite) TestSuccessCopySrcWithMirror(c *check.C) {
-	dir, err := ioutil.TempDir("", "copy-mirror")
-	c.Assert(err, check.IsNil)
+	dir := c.MkDir()
 
 	assertSkopeoSucceeds(c, "", "--registries-conf="+regConfFixture, "copy",
 		"docker://mirror.invalid/busybox", "dir:"+dir)
 }
 
 func (s *SkopeoSuite) TestFailureCopySrcWithMirrorsUnavailable(c *check.C) {
-	dir, err := ioutil.TempDir("", "copy-mirror")
-	c.Assert(err, check.IsNil)
+	dir := c.MkDir()
 
 	// .invalid domains are, per RFC 6761, supposed to result in NXDOMAIN.
 	// With systemd-resolved (used only via NSS?), we instead seem to get “Temporary failure in name resolution”
@@ -1312,16 +1166,14 @@ func (s *SkopeoSuite) TestFailureCopySrcWithMirrorsUnavailable(c *check.C) {
 }
 
 func (s *SkopeoSuite) TestSuccessCopySrcWithMirrorAndPrefix(c *check.C) {
-	dir, err := ioutil.TempDir("", "copy-mirror")
-	c.Assert(err, check.IsNil)
+	dir := c.MkDir()
 
 	assertSkopeoSucceeds(c, "", "--registries-conf="+regConfFixture, "copy",
 		"docker://gcr.invalid/foo/bar/busybox", "dir:"+dir)
 }
 
 func (s *SkopeoSuite) TestFailureCopySrcWithMirrorAndPrefixUnavailable(c *check.C) {
-	dir, err := ioutil.TempDir("", "copy-mirror")
-	c.Assert(err, check.IsNil)
+	dir := c.MkDir()
 
 	// .invalid domains are, per RFC 6761, supposed to result in NXDOMAIN.
 	// With systemd-resolved (used only via NSS?), we instead seem to get “Temporary failure in name resolution”

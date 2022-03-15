@@ -33,10 +33,7 @@ type openshiftCluster struct {
 // in isolated test environment.
 func startOpenshiftCluster(c *check.C) *openshiftCluster {
 	cluster := &openshiftCluster{}
-
-	dir, err := ioutil.TempDir("", "openshift-cluster")
-	c.Assert(err, check.IsNil)
-	cluster.workingDir = dir
+	cluster.workingDir = c.MkDir()
 
 	cluster.startMaster(c)
 	cluster.prepareRegistryConfig(c)
@@ -261,10 +258,6 @@ func (cluster *openshiftCluster) tearDown(c *check.C) {
 		// It’s undocumented what Kill() returns if the process has terminated,
 		// so we couldn’t check just for that. This is running in a container anyway…
 		_ = cluster.processes[i].Process.Kill()
-	}
-	if cluster.workingDir != "" {
-		err := os.RemoveAll(cluster.workingDir)
-		c.Assert(err, check.IsNil)
 	}
 	if cluster.dockerDir != "" {
 		err := os.RemoveAll(cluster.dockerDir)
