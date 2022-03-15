@@ -98,7 +98,7 @@ const maxMsgSize = 32 * 1024
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number/MAX_SAFE_INTEGER
 // We hard error if the input JSON numbers we expect to be
 // integers are above this.
-const maxJSONFloat = float64(1<<53 - 1)
+const maxJSONFloat = float64(uint64(1)<<53 - 1)
 
 // request is the JSON serialization of a function call
 type request struct {
