@@ -241,7 +241,7 @@ func runTestGetManifestAndConfig(p *proxy, img string) error {
 	}
 	imgid := uint32(imgidv)
 
-	v, manifestBytes, err := p.callReadAllBytes("GetManifest", []interface{}{imgid})
+	_, manifestBytes, err := p.callReadAllBytes("GetManifest", []interface{}{imgid})
 	if err != nil {
 		return err
 	}
@@ -250,7 +250,7 @@ func runTestGetManifestAndConfig(p *proxy, img string) error {
 		return err
 	}
 
-	v, configBytes, err := p.callReadAllBytes("GetFullConfig", []interface{}{imgid})
+	_, configBytes, err := p.callReadAllBytes("GetFullConfig", []interface{}{imgid})
 	if err != nil {
 		return err
 	}
@@ -269,7 +269,7 @@ func runTestGetManifestAndConfig(p *proxy, img string) error {
 	}
 
 	// Also test this legacy interface
-	v, ctrconfigBytes, err := p.callReadAllBytes("GetConfig", []interface{}{imgid})
+	_, ctrconfigBytes, err := p.callReadAllBytes("GetConfig", []interface{}{imgid})
 	if err != nil {
 		return err
 	}
