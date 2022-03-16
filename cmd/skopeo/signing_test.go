@@ -25,9 +25,8 @@ const (
 // Test that results of runSkopeo failed with nothing on stdout, and substring
 // within the error message.
 func assertTestFailed(t *testing.T, stdout string, err error, substring string) {
-	assert.Error(t, err)
+	assert.ErrorContains(t, err, substring)
 	assert.Empty(t, stdout)
-	assert.Contains(t, err.Error(), substring)
 }
 
 func TestStandaloneSign(t *testing.T) {
