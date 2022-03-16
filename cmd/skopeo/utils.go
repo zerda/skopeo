@@ -34,7 +34,7 @@ func commandAction(handler func(args []string, stdout io.Writer) error) func(cmd
 	return func(c *cobra.Command, args []string) error {
 		err := handler(args, c.OutOrStdout())
 		if _, ok := err.(errorShouldDisplayUsage); ok {
-			c.Help()
+			return c.Help()
 		}
 		return err
 	}

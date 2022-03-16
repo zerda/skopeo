@@ -126,7 +126,10 @@ func (t *testRegistryV2) Ping() error {
 	return nil
 }
 
-func (t *testRegistryV2) Close() {
-	t.cmd.Process.Kill()
-	os.RemoveAll(t.dir)
+func (t *testRegistryV2) tearDown(c *check.C) {
+	// It’s undocumented what Kill() returns if the process has terminated,
+	// so we couldn’t check just for that. This is running in a container anyway…
+	_ = t.cmd.Process.Kill()
+	err := os.RemoveAll(t.dir)
+	c.Assert(err, check.IsNil)
 }

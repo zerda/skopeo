@@ -57,7 +57,7 @@ type pipefd struct {
 	fd *os.File
 }
 
-func (self *proxy) call(method string, args []interface{}) (rval interface{}, fd *pipefd, err error) {
+func (p *proxy) call(method string, args []interface{}) (rval interface{}, fd *pipefd, err error) {
 	req := request{
 		Method: method,
 		Args:   args,
@@ -66,7 +66,7 @@ func (self *proxy) call(method string, args []interface{}) (rval interface{}, fd
 	if err != nil {
 		return
 	}
-	n, err := self.c.Write(reqbuf)
+	n, err := p.c.Write(reqbuf)
 	if err != nil {
 		return
 	}
@@ -76,7 +76,7 @@ func (self *proxy) call(method string, args []interface{}) (rval interface{}, fd
 	}
 	oob := make([]byte, syscall.CmsgSpace(1))
 	replybuf := make([]byte, maxMsgSize)
-	n, oobn, _, _, err := self.c.ReadMsgUnix(replybuf, oob)
+	n, oobn, _, _, err := p.c.ReadMsgUnix(replybuf, oob)
 	if err != nil {
 		err = fmt.Errorf("reading reply: %v", err)
 		return
@@ -119,9 +119,9 @@ func (self *proxy) call(method string, args []interface{}) (rval interface{}, fd
 	return
 }
 
-func (self *proxy) callNoFd(method string, args []interface{}) (rval interface{}, err error) {
+func (p *proxy) callNoFd(method string, args []interface{}) (rval interface{}, err error) {
 	var fd *pipefd
-	rval, fd, err = self.call(method, args)
+	rval, fd, err = p.call(method, args)
 	if err != nil {
 		return
 	}
@@ -132,9 +132,9 @@ func (self *proxy) callNoFd(method string, args []interface{}) (rval interface{}
 	return rval, nil
 }
 
-func (self *proxy) callReadAllBytes(method string, args []interface{}) (rval interface{}, buf []byte, err error) {
+func (p *proxy) callReadAllBytes(method string, args []interface{}) (rval interface{}, buf []byte, err error) {
 	var fd *pipefd
-	rval, fd, err = self.call(method, args)
+	rval, fd, err = p.call(method, args)
 	if err != nil {
 		return
 	}
@@ -150,7 +150,7 @@ func (self *proxy) callReadAllBytes(method string, args []interface{}) (rval int
 			err:     err,
 		}
 	}()
-	_, err = self.callNoFd("FinishPipe", []interface{}{fd.id})
+	_, err = p.callNoFd("FinishPipe", []interface{}{fd.id})
 	if err != nil {
 		return
 	}
@@ -241,7 +241,7 @@ func runTestGetManifestAndConfig(p *proxy, img string) error {
 	}
 	imgid := uint32(imgidv)
 
-	v, manifestBytes, err := p.callReadAllBytes("GetManifest", []interface{}{imgid})
+	_, manifestBytes, err := p.callReadAllBytes("GetManifest", []interface{}{imgid})
 	if err != nil {
 		return err
 	}
@@ -250,7 +250,7 @@ func runTestGetManifestAndConfig(p *proxy, img string) error {
 		return err
 	}
 
-	v, configBytes, err := p.callReadAllBytes("GetFullConfig", []interface{}{imgid})
+	_, configBytes, err := p.callReadAllBytes("GetFullConfig", []interface{}{imgid})
 	if err != nil {
 		return err
 	}
@@ -269,7 +269,7 @@ func runTestGetManifestAndConfig(p *proxy, img string) error {
 	}
 
 	// Also test this legacy interface
-	v, ctrconfigBytes, err := p.callReadAllBytes("GetConfig", []interface{}{imgid})
+	_, ctrconfigBytes, err := p.callReadAllBytes("GetConfig", []interface{}{imgid})
 	if err != nil {
 		return err
 	}
@@ -285,6 +285,9 @@ func runTestGetManifestAndConfig(p *proxy, img string) error {
 	}
 
 	_, err = p.callNoFd("CloseImage", []interface{}{imgid})
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

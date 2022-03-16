@@ -500,7 +500,7 @@ func imagesToCopy(source string, transport string, sourceCtx *types.SystemContex
 	return descriptors, nil
 }
 
-func (opts *syncOptions) run(args []string, stdout io.Writer) error {
+func (opts *syncOptions) run(args []string, stdout io.Writer) (retErr error) {
 	if len(args) != 2 {
 		return errorShouldDisplayUsage{errors.New("Exactly two arguments expected")}
 	}
@@ -510,7 +510,11 @@ func (opts *syncOptions) run(args []string, stdout io.Writer) error {
 	if err != nil {
 		return errors.Wrapf(err, "Error loading trust policy")
 	}
-	defer policyContext.Destroy()
+	defer func() {
+		if err := policyContext.Destroy(); err != nil {
+			retErr = fmt.Errorf("(error tearing down policy context: %v): %w", err, retErr)
+		}
+	}()
 
 	// validate source and destination options
 	contains := func(val string, list []string) (_ bool) {

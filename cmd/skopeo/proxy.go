@@ -98,7 +98,7 @@ const maxMsgSize = 32 * 1024
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number/MAX_SAFE_INTEGER
 // We hard error if the input JSON numbers we expect to be
 // integers are above this.
-const maxJSONFloat = float64(1<<53 - 1)
+const maxJSONFloat = float64(uint64(1)<<53 - 1)
 
 // request is the JSON serialization of a function call
 type request struct {
@@ -664,7 +664,14 @@ func proxyCmd(global *globalOptions) *cobra.Command {
 // processRequest dispatches a remote request.
 // replyBuf is the result of the invocation.
 // terminate should be true if processing of requests should halt.
-func (h *proxyHandler) processRequest(req request) (rb replyBuf, terminate bool, err error) {
+func (h *proxyHandler) processRequest(readBytes []byte) (rb replyBuf, terminate bool, err error) {
+	var req request
+
+	// Parse the request JSON
+	if err = json.Unmarshal(readBytes, &req); err != nil {
+		err = fmt.Errorf("invalid request: %v", err)
+		return
+	}
 	// Dispatch on the method
 	switch req.Method {
 	case "Initialize":
@@ -717,18 +724,15 @@ func (opts *proxyOptions) run(args []string, stdout io.Writer) error {
 			}
 			return fmt.Errorf("reading socket: %v", err)
 		}
-		// Parse the request JSON
 		readbuf := buf[0:n]
-		var req request
-		if err := json.Unmarshal(readbuf, &req); err != nil {
-			rb := replyBuf{}
-			rb.send(conn, fmt.Errorf("invalid request: %v", err))
-		}
 
-		rb, terminate, err := handler.processRequest(req)
+		rb, terminate, err := handler.processRequest(readbuf)
 		if terminate {
 			return nil
 		}
-		rb.send(conn, err)
+
+		if err := rb.send(conn, err); err != nil {
+			return fmt.Errorf("writing to socket: %w", err)
+		}
 	}
 }

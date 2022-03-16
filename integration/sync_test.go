@@ -100,7 +100,7 @@ func (s *SyncSuite) TearDownSuite(c *check.C) {
 		os.RemoveAll(s.gpgHome)
 	}
 	if s.registry != nil {
-		s.registry.Close()
+		s.registry.tearDown(c)
 	}
 	if s.cluster != nil {
 		s.cluster.tearDown(c)
@@ -278,7 +278,8 @@ func (s *SyncSuite) TestYamlUntagged(c *check.C) {
 
 	// sync to the local registry
 	yamlFile := path.Join(tmpDir, "registries.yaml")
-	ioutil.WriteFile(yamlFile, []byte(yamlConfig), 0644)
+	err = ioutil.WriteFile(yamlFile, []byte(yamlConfig), 0644)
+	c.Assert(err, check.IsNil)
 	assertSkopeoSucceeds(c, "", "sync", "--scoped", "--src", "yaml", "--dest", "docker", "--dest-tls-verify=false", yamlFile, v2DockerRegistryURL)
 	// sync back from local registry to a folder
 	os.Remove(yamlFile)
@@ -289,7 +290,8 @@ func (s *SyncSuite) TestYamlUntagged(c *check.C) {
     %s: []
 `, v2DockerRegistryURL, imagePath)
 
-	ioutil.WriteFile(yamlFile, []byte(yamlConfig), 0644)
+	err = ioutil.WriteFile(yamlFile, []byte(yamlConfig), 0644)
+	c.Assert(err, check.IsNil)
 	assertSkopeoSucceeds(c, "", "sync", "--scoped", "--src", "yaml", "--dest", "dir", yamlFile, dir1)
 
 	sysCtx = types.SystemContext{
@@ -334,7 +336,8 @@ k8s.gcr.io:
 	c.Assert(nTags, check.Not(check.Equals), 0)
 
 	yamlFile := path.Join(tmpDir, "registries.yaml")
-	ioutil.WriteFile(yamlFile, []byte(yamlConfig), 0644)
+	err = ioutil.WriteFile(yamlFile, []byte(yamlConfig), 0644)
+	c.Assert(err, check.IsNil)
 	assertSkopeoSucceeds(c, "", "sync", "--scoped", "--src", "yaml", "--dest", "dir", yamlFile, dir1)
 
 	nManifests := 0
@@ -365,7 +368,8 @@ k8s.gcr.io:
     - sha256:59eec8837a4d942cc19a52b8c09ea75121acc38114a2c68b98983ce9356b8610
 `
 	yamlFile := path.Join(tmpDir, "registries.yaml")
-	ioutil.WriteFile(yamlFile, []byte(yamlConfig), 0644)
+	err = ioutil.WriteFile(yamlFile, []byte(yamlConfig), 0644)
+	c.Assert(err, check.IsNil)
 	assertSkopeoSucceeds(c, "", "sync", "--scoped", "--src", "yaml", "--dest", "dir", yamlFile, dir1)
 
 	nManifests := 0
@@ -417,7 +421,8 @@ quay.io:
 	c.Assert(nTags, check.Not(check.Equals), 0)
 
 	yamlFile := path.Join(tmpDir, "registries.yaml")
-	ioutil.WriteFile(yamlFile, []byte(yamlConfig), 0644)
+	err = ioutil.WriteFile(yamlFile, []byte(yamlConfig), 0644)
+	c.Assert(err, check.IsNil)
 	assertSkopeoSucceeds(c, "", "sync", "--scoped", "--src", "yaml", "--dest", "dir", yamlFile, dir1)
 
 	nManifests := 0
@@ -481,7 +486,8 @@ func (s *SyncSuite) TestYamlTLSVerify(c *check.C) {
 	for _, cfg := range testCfg {
 		yamlConfig := fmt.Sprintf(yamlTemplate, v2DockerRegistryURL, cfg.tlsVerify, image, tag)
 		yamlFile := path.Join(tmpDir, "registries.yaml")
-		ioutil.WriteFile(yamlFile, []byte(yamlConfig), 0644)
+		err = ioutil.WriteFile(yamlFile, []byte(yamlConfig), 0644)
+		c.Assert(err, check.IsNil)
 
 		cfg.checker(c, cfg.msg, "sync", "--scoped", "--src", "yaml", "--dest", "dir", yamlFile, dir1)
 		os.Remove(yamlFile)

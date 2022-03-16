@@ -110,7 +110,7 @@ func parseMultiArch(multiArch string) (copy.ImageListSelection, error) {
 	}
 }
 
-func (opts *copyOptions) run(args []string, stdout io.Writer) error {
+func (opts *copyOptions) run(args []string, stdout io.Writer) (retErr error) {
 	if len(args) != 2 {
 		return errorShouldDisplayUsage{errors.New("Exactly two arguments expected")}
 	}
@@ -125,7 +125,11 @@ func (opts *copyOptions) run(args []string, stdout io.Writer) error {
 	if err != nil {
 		return fmt.Errorf("Error loading trust policy: %v", err)
 	}
-	defer policyContext.Destroy()
+	defer func() {
+		if err := policyContext.Destroy(); err != nil {
+			retErr = fmt.Errorf("(error tearing down policy context: %v): %w", err, retErr)
+		}
+	}()
 
 	srcRef, err := alltransports.ParseImageName(imageNames[0])
 	if err != nil {
