@@ -20,7 +20,6 @@ const (
 type testRegistryV2 struct {
 	cmd      *exec.Cmd
 	url      string
-	dir      string
 	username string
 	password string
 	email    string
@@ -45,10 +44,7 @@ func setupRegistryV2At(c *check.C, url string, auth, schema1 bool) *testRegistry
 }
 
 func newTestRegistryV2At(c *check.C, url string, auth, schema1 bool) (*testRegistryV2, error) {
-	tmp, err := ioutil.TempDir("", "registry-test-")
-	if err != nil {
-		return nil, err
-	}
+	tmp := c.MkDir()
 	template := `version: 0.1
 loglevel: debug
 storage:
@@ -86,7 +82,6 @@ http:
 		return nil, err
 	}
 	if _, err := fmt.Fprintf(config, template, tmp, url, htpasswd); err != nil {
-		os.RemoveAll(tmp)
 		return nil, err
 	}
 
@@ -98,7 +93,6 @@ http:
 	cmd := exec.Command(binary, confPath)
 	consumeAndLogOutputs(c, fmt.Sprintf("registry-%s", url), cmd)
 	if err := cmd.Start(); err != nil {
-		os.RemoveAll(tmp)
 		if os.IsNotExist(err) {
 			c.Skip(err.Error())
 		}
@@ -107,7 +101,6 @@ http:
 	return &testRegistryV2{
 		cmd:      cmd,
 		url:      url,
-		dir:      tmp,
 		username: username,
 		password: password,
 		email:    email,
@@ -130,6 +123,4 @@ func (t *testRegistryV2) tearDown(c *check.C) {
 	// It’s undocumented what Kill() returns if the process has terminated,
 	// so we couldn’t check just for that. This is running in a container anyway…
 	_ = t.cmd.Process.Kill()
-	err := os.RemoveAll(t.dir)
-	c.Assert(err, check.IsNil)
 }
