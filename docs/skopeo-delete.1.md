@@ -6,17 +6,27 @@ skopeo\-delete - Mark the _image-name_ for later deletion by the registry's garb
 ## SYNOPSIS
 **skopeo delete** [*options*] _image-name_
 
-Mark _image-name_ for deletion.  To release the allocated disk space, you must login to the container registry server and execute the container registry garbage collector. E.g.,
+## DESCRIPTION
+
+Mark _image-name_ for deletion.
+The effect of this is registry-specific; many registries don’t support this operation, or don’t allow it in some circumstances / configurations.
+
+**WARNING**: If _image-name_ contains a digest, this affects the referenced manifest, and may delete all tags (within the current repository?) pointing to that manifest.
+
+**WARNING**: If _image-name_ contains a tag (but not a digest), in the current version of Skopeo this resolves the tag into a digest, and then deletes the manifest by digest, as described above (possibly deleting all tags pointing to that manifest, not just the provided tag). This behavior may change in the future.
+
+
+When using the github.com/distribution/distribution registry server:
+To release the allocated disk space, you must login to the container registry server and execute the container registry garbage collector. E.g.,
 
 ```
 /usr/bin/registry garbage-collect /etc/docker-distribution/registry/config.yml
-
+```
 Note: sometimes the config.yml is stored in /etc/docker/registry/config.yml
 
 If you are running the container registry inside of a container you would execute something like:
-
+```
 $ docker exec -it registry /usr/bin/registry garbage-collect /etc/docker-distribution/registry/config.yml
-
 ```
 
 ## OPTIONS
