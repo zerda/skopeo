@@ -4,7 +4,7 @@ go 1.15
 
 require (
 	github.com/containerd/containerd v1.6.1 // indirect
-	github.com/containers/common v0.47.4
+	github.com/containers/common v0.47.5
 	github.com/containers/image/v5 v5.20.0
 	github.com/containers/ocicrypt v1.1.3
 	github.com/containers/storage v1.39.0
