@@ -18,7 +18,7 @@ default to `/`.
 
 The container images are:
 
-  * `quay.io/containers/skopeo:<version>` and `quay.io/skopeo/stable:<version>` -
+  * `quay.io/containers/skopeo:v<version>` and `quay.io/skopeo/stable:v<version>` -
     These images are built when a new Skopeo version becomes available in
     Fedora.  These images are intended to be unchanging and stable, they will
     never be updated by automation once they've been pushed.  For build details,
