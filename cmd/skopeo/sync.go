@@ -42,6 +42,7 @@ type syncOptions struct {
 	destination         string                    // Destination registry name
 	scoped              bool                      // When true, namespace copied images at destination using the source repository name
 	all                 bool                      // Copy all of the images if an image in the source is a list
+	dryRun              bool                      // Don't actually copy anything, just output what it would have done
 	preserveDigests     bool                      // Preserve digests during sync
 	keepGoing           bool                      // Whether or not to abort the sync if there are any errors during syncing the images
 }
@@ -110,6 +111,7 @@ See skopeo-sync(1) for details.
 	flags.StringVarP(&opts.destination, "dest", "d", "", "DESTINATION transport type")
 	flags.BoolVar(&opts.scoped, "scoped", false, "Images at DESTINATION are prefix using the full source image path as scope")
 	flags.BoolVarP(&opts.all, "all", "a", false, "Copy all images if SOURCE-IMAGE is a list")
+	flags.BoolVar(&opts.dryRun, "dry-run", false, "Run without actually copying data")
 	flags.BoolVar(&opts.preserveDigests, "preserve-digests", false, "Preserve digests of images and lists")
 	flags.BoolVarP(&opts.keepGoing, "keep-going", "", false, "Do not abort the sync if any image copy fails")
 	flags.AddFlagSet(&sharedFlags)
@@ -597,6 +599,10 @@ func (opts *syncOptions) run(args []string, stdout io.Writer) (retErr error) {
 	}
 	errorsPresent := false
 	imagesNumber := 0
+	if opts.dryRun {
+		logrus.Warn("Running in dry-run mode")
+	}
+
 	for _, srcRepo := range srcRepoList {
 		options.SourceCtx = srcRepo.Context
 		for counter, ref := range srcRepo.ImageRefs {
@@ -623,29 +629,37 @@ func (opts *syncOptions) run(args []string, stdout io.Writer) (retErr error) {
 				return err
 			}
 
-			logrus.WithFields(logrus.Fields{
+			fromToFields := logrus.Fields{
 				"from": transports.ImageName(ref),
 				"to":   transports.ImageName(destRef),
-			}).Infof("Copying image ref %d/%d", counter+1, len(srcRepo.ImageRefs))
-
-			if err = retry.RetryIfNecessary(ctx, func() error {
-				_, err = copy.Image(ctx, policyContext, destRef, ref, &options)
-				return err
-			}, opts.retryOpts); err != nil {
-				if !opts.keepGoing {
-					return errors.Wrapf(err, "Error copying ref %q", transports.ImageName(ref))
+			}
+			if opts.dryRun {
+				logrus.WithFields(fromToFields).Infof("Would have copied image ref %d/%d", counter+1, len(srcRepo.ImageRefs))
+			} else {
+				logrus.WithFields(fromToFields).Infof("Copying image ref %d/%d", counter+1, len(srcRepo.ImageRefs))
+				if err = retry.RetryIfNecessary(ctx, func() error {
+					_, err = copy.Image(ctx, policyContext, destRef, ref, &options)
+					return err
+				}, opts.retryOpts); err != nil {
+					if !opts.keepGoing {
+						return errors.Wrapf(err, "Error copying ref %q", transports.ImageName(ref))
+					}
+					// log the error, keep a note that there was a failure and move on to the next
+					// image ref
+					errorsPresent = true
+					logrus.WithError(err).Errorf("Error copying ref %q", transports.ImageName(ref))
+					continue
 				}
-				// log the error, keep a note that there was a failure and move on to the next
-				// image ref
-				errorsPresent = true
-				logrus.WithError(err).Errorf("Error copying ref %q", transports.ImageName(ref))
-				continue
 			}
 			imagesNumber++
 		}
 	}
 
-	logrus.Infof("Synced %d images from %d sources", imagesNumber, len(srcRepoList))
+	if opts.dryRun {
+		logrus.Infof("Would have synced %d images from %d sources", imagesNumber, len(srcRepoList))
+	} else {
+		logrus.Infof("Synced %d images from %d sources", imagesNumber, len(srcRepoList))
+	}
 	if !errorsPresent {
 		return nil
 	}
