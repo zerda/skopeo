@@ -70,7 +70,7 @@ MANIFEST TYPE (oci, v2s1, or v2s2) to use in the destination (default is manifes
 
 Print usage statement
 
-**--multi-arch**
+**--multi-arch** _option_
 
 Control what is copied if _source-image_ refers to a multi-architecture image. Default is system.
 
@@ -89,13 +89,17 @@ Suppress output information when copying images.
 
 Do not copy signatures, if any, from _source-image_. Necessary when copying a signed image to a destination which does not support signatures.
 
-**--sign-by**=_key-id_
+**--sign-by** _key-id_
 
 Add a signature using that key ID for an image name corresponding to _destination-image_
 
-**--sign-passphrase-file**=_path_
+**--sign-passphrase-file** _path_
 
 The passphare to use when signing with the key ID from `--sign-by`. Only the first line will be read. A passphrase stored in a file is of questionable security if other users can read this file. Do not use this option if at all avoidable.
+
+**--sign-identity** _reference_
+
+The identity to use when signing the image. The identity must be a fully specified docker reference. If the identity is not specified, the target docker reference will be used.
 
 **--src-shared-blob-dir** _directory_
 
