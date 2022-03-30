@@ -3,9 +3,8 @@ module github.com/containers/skopeo
 go 1.15
 
 require (
-	github.com/containerd/containerd v1.6.1 // indirect
 	github.com/containers/common v0.47.5
-	github.com/containers/image/v5 v5.20.0
+	github.com/containers/image/v5 v5.20.1-0.20220330152611-fcf8ddafd1f1
 	github.com/containers/ocicrypt v1.1.3
 	github.com/containers/storage v1.39.0
 	github.com/docker/docker v20.10.14+incompatible
@@ -21,9 +20,6 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.7.1
 	github.com/syndtr/gocapability v0.0.0-20200815063812-42c35b437635
-	golang.org/x/net v0.0.0-20220225172249-27dd8689420f // indirect
-	golang.org/x/sys v0.0.0-20220227234510-4e6760a101f9 // indirect
-	google.golang.org/genproto v0.0.0-20220304144024-325a89244dc8 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
 	gopkg.in/yaml.v2 v2.4.0
 )
