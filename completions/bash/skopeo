@@ -43,6 +43,7 @@ _skopeo_copy() {
     --multi-arch
     --sign-by
     --sign-passphrase-file
+    --sign-identity
     --src-creds --screds
     --src-cert-dir
     --src-tls-verify
