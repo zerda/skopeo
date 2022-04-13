@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -140,7 +139,7 @@ func (tls *tlsVerifyConfig) UnmarshalYAML(unmarshal func(interface{}) error) err
 // It returns a new unmarshaled sourceConfig object and any error encountered.
 func newSourceConfig(yamlFile string) (sourceConfig, error) {
 	var cfg sourceConfig
-	source, err := ioutil.ReadFile(yamlFile)
+	source, err := os.ReadFile(yamlFile)
 	if err != nil {
 		return cfg, err
 	}

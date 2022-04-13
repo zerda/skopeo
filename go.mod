@@ -1,6 +1,6 @@
 module github.com/containers/skopeo
 
-go 1.15
+go 1.16
 
 require (
 	github.com/containers/common v0.47.5

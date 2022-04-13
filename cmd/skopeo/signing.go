@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
+	"os"
 
 	"github.com/containers/image/v5/pkg/cli"
 	"github.com/containers/image/v5/signature"
@@ -39,7 +39,7 @@ func (opts *standaloneSignOptions) run(args []string, stdout io.Writer) error {
 	dockerReference := args[1]
 	fingerprint := args[2]
 
-	manifest, err := ioutil.ReadFile(manifestPath)
+	manifest, err := os.ReadFile(manifestPath)
 	if err != nil {
 		return fmt.Errorf("Error reading %s: %v", manifestPath, err)
 	}
@@ -60,7 +60,7 @@ func (opts *standaloneSignOptions) run(args []string, stdout io.Writer) error {
 		return fmt.Errorf("Error creating signature: %v", err)
 	}
 
-	if err := ioutil.WriteFile(opts.output, signature, 0644); err != nil {
+	if err := os.WriteFile(opts.output, signature, 0644); err != nil {
 		return fmt.Errorf("Error writing signature to %s: %v", opts.output, err)
 	}
 	return nil
@@ -89,11 +89,11 @@ func (opts *standaloneVerifyOptions) run(args []string, stdout io.Writer) error 
 	expectedFingerprint := args[2]
 	signaturePath := args[3]
 
-	unverifiedManifest, err := ioutil.ReadFile(manifestPath)
+	unverifiedManifest, err := os.ReadFile(manifestPath)
 	if err != nil {
 		return fmt.Errorf("Error reading manifest from %s: %v", manifestPath, err)
 	}
-	unverifiedSignature, err := ioutil.ReadFile(signaturePath)
+	unverifiedSignature, err := os.ReadFile(signaturePath)
 	if err != nil {
 		return fmt.Errorf("Error reading signature from %s: %v", signaturePath, err)
 	}
@@ -139,7 +139,7 @@ func (opts *untrustedSignatureDumpOptions) run(args []string, stdout io.Writer) 
 	}
 	untrustedSignaturePath := args[0]
 
-	untrustedSignature, err := ioutil.ReadFile(untrustedSignaturePath)
+	untrustedSignature, err := os.ReadFile(untrustedSignaturePath)
 	if err != nil {
 		return fmt.Errorf("Error reading untrusted signature from %s: %v", untrustedSignaturePath, err)
 	}

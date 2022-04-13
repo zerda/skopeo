@@ -3,8 +3,8 @@ package main
 import (
 	"bytes"
 	"io"
-	"io/ioutil"
 	"net"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -163,7 +163,7 @@ func modifyEnviron(env []string, name, value string) []string {
 // fileFromFixtureFixture applies edits to inputPath and returns a path to the temporary file.
 // Callers should defer os.Remove(the_returned_path)
 func fileFromFixture(c *check.C, inputPath string, edits map[string]string) string {
-	contents, err := ioutil.ReadFile(inputPath)
+	contents, err := os.ReadFile(inputPath)
 	c.Assert(err, check.IsNil)
 	for template, value := range edits {
 		updated := bytes.Replace(contents, []byte(template), []byte(value), -1)
@@ -171,7 +171,7 @@ func fileFromFixture(c *check.C, inputPath string, edits map[string]string) stri
 		contents = updated
 	}
 
-	file, err := ioutil.TempFile("", "policy.json")
+	file, err := os.CreateTemp("", "policy.json")
 	c.Assert(err, check.IsNil)
 	path := file.Name()
 
@@ -187,7 +187,7 @@ func fileFromFixture(c *check.C, inputPath string, edits map[string]string) stri
 func runDecompressDirs(c *check.C, regexp string, args ...string) {
 	c.Logf("Running %s %s", decompressDirsBinary, strings.Join(args, " "))
 	for i, dir := range args {
-		m, err := ioutil.ReadFile(filepath.Join(dir, "manifest.json"))
+		m, err := os.ReadFile(filepath.Join(dir, "manifest.json"))
 		c.Assert(err, check.IsNil)
 		c.Logf("manifest %d before: %s", i+1, string(m))
 	}
@@ -197,7 +197,7 @@ func runDecompressDirs(c *check.C, regexp string, args ...string) {
 		if len(out) > 0 {
 			c.Logf("output: %s", out)
 		}
-		m, err := ioutil.ReadFile(filepath.Join(dir, "manifest.json"))
+		m, err := os.ReadFile(filepath.Join(dir, "manifest.json"))
 		c.Assert(err, check.IsNil)
 		c.Logf("manifest %d after: %s", i+1, string(m))
 	}
@@ -208,7 +208,7 @@ func runDecompressDirs(c *check.C, regexp string, args ...string) {
 
 // Verify manifest in a dir: image at dir is expectedMIMEType.
 func verifyManifestMIMEType(c *check.C, dir string, expectedMIMEType string) {
-	manifestBlob, err := ioutil.ReadFile(filepath.Join(dir, "manifest.json"))
+	manifestBlob, err := os.ReadFile(filepath.Join(dir, "manifest.json"))
 	c.Assert(err, check.IsNil)
 	mimeType := manifest.GuessMIMEType(manifestBlob)
 	c.Assert(mimeType, check.Equals, expectedMIMEType)

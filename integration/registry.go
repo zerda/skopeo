@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"os/exec"
@@ -67,7 +66,7 @@ http:
 		username = "testuser"
 		password = "testpassword"
 		email = "test@test.org"
-		if err := ioutil.WriteFile(htpasswdPath, []byte(userpasswd), os.FileMode(0644)); err != nil {
+		if err := os.WriteFile(htpasswdPath, []byte(userpasswd), os.FileMode(0644)); err != nil {
 			return nil, err
 		}
 		htpasswd = fmt.Sprintf(`auth:

@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"os"
 	"testing"
 	"time"
@@ -77,7 +76,7 @@ func TestStandaloneSign(t *testing.T) {
 	assertTestFailed(t, out, err, "/dev/full")
 
 	// Success
-	sigOutput, err := ioutil.TempFile("", "sig")
+	sigOutput, err := os.CreateTemp("", "sig")
 	require.NoError(t, err)
 	defer os.Remove(sigOutput.Name())
 	out, err = runSkopeo("standalone-sign", "-o", sigOutput.Name(),
@@ -85,9 +84,9 @@ func TestStandaloneSign(t *testing.T) {
 	require.NoError(t, err)
 	assert.Empty(t, out)
 
-	sig, err := ioutil.ReadFile(sigOutput.Name())
+	sig, err := os.ReadFile(sigOutput.Name())
 	require.NoError(t, err)
-	manifest, err := ioutil.ReadFile(manifestPath)
+	manifest, err := os.ReadFile(manifestPath)
 	require.NoError(t, err)
 	mech, err = signature.NewGPGSigningMechanism()
 	require.NoError(t, err)

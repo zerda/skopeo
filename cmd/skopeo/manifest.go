@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
+	"os"
 
 	"github.com/containers/image/v5/manifest"
 	"github.com/spf13/cobra"
@@ -31,7 +31,7 @@ func (opts *manifestDigestOptions) run(args []string, stdout io.Writer) error {
 	}
 	manifestPath := args[0]
 
-	man, err := ioutil.ReadFile(manifestPath)
+	man, err := os.ReadFile(manifestPath)
 	if err != nil {
 		return fmt.Errorf("Error reading manifest from %s: %v", manifestPath, err)
 	}

@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
+	"os"
 	"strings"
 
 	commonFlag "github.com/containers/common/pkg/flag"
@@ -265,7 +265,7 @@ func (opts *copyOptions) run(args []string, stdout io.Writer) (retErr error) {
 			if err != nil {
 				return err
 			}
-			if err = ioutil.WriteFile(opts.digestFile, []byte(manifestDigest.String()), 0644); err != nil {
+			if err = os.WriteFile(opts.digestFile, []byte(manifestDigest.String()), 0644); err != nil {
 				return fmt.Errorf("Failed to write digest to file %q: %w", opts.digestFile, err)
 			}
 		}

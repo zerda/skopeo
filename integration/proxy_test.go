@@ -3,7 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net"
 	"os"
 	"os/exec"
@@ -144,7 +144,7 @@ func (p *proxy) callReadAllBytes(method string, args []interface{}) (rval interf
 	}
 	fetchchan := make(chan byteFetch)
 	go func() {
-		manifestBytes, err := ioutil.ReadAll(fd.fd)
+		manifestBytes, err := io.ReadAll(fd.fd)
 		fetchchan <- byteFetch{
 			content: manifestBytes,
 			err:     err,

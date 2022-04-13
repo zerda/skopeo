@@ -3,7 +3,6 @@ package main
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"strings"
@@ -65,7 +64,7 @@ func (s *SigningSuite) TestSignVerifySmoke(c *check.C) {
 	manifestPath := "fixtures/image.manifest.json"
 	dockerReference := "testing/smoketest"
 
-	sigOutput, err := ioutil.TempFile("", "sig")
+	sigOutput, err := os.CreateTemp("", "sig")
 	c.Assert(err, check.IsNil)
 	defer os.Remove(sigOutput.Name())
 	assertSkopeoSucceeds(c, "^$", "standalone-sign", "-o", sigOutput.Name(),
