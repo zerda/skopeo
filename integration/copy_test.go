@@ -6,6 +6,7 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"fmt"
+	"io/fs"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -831,15 +832,15 @@ func (s *CopySuite) TestCopyCompression(c *check.C) {
 
 func findRegularFiles(c *check.C, root string) []string {
 	result := []string{}
-	err := filepath.Walk(root, filepath.WalkFunc(func(path string, info os.FileInfo, err error) error {
+	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
-		if info.Mode().IsRegular() {
+		if d.Type().IsRegular() {
 			result = append(result, path)
 		}
 		return nil
-	}))
+	})
 	c.Assert(err, check.IsNil)
 	return result
 }

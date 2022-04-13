@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path"
 	"path/filepath"
@@ -258,11 +259,11 @@ func imagesToCopyFromRepo(sys *types.SystemContext, repoRef reference.Named) ([]
 // and any error encountered.
 func imagesToCopyFromDir(dirPath string) ([]types.ImageReference, error) {
 	var sourceReferences []types.ImageReference
-	err := filepath.Walk(dirPath, func(path string, info os.FileInfo, err error) error {
+	err := filepath.WalkDir(dirPath, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
-		if !info.IsDir() && info.Name() == "manifest.json" {
+		if !d.IsDir() && d.Name() == "manifest.json" {
 			dirname := filepath.Dir(path)
 			ref, err := directory.Transport.ParseReference(dirname)
 			if err != nil {

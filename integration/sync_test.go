@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"io/fs"
 	"os"
 	"path"
 	"path/filepath"
@@ -102,11 +103,11 @@ func (s *SyncSuite) TearDownSuite(c *check.C) {
 
 func assertNumberOfManifestsInSubdirs(c *check.C, dir string, expectedCount int) {
 	nManifests := 0
-	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+	err := filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
-		if !info.IsDir() && info.Name() == "manifest.json" {
+		if !d.IsDir() && d.Name() == "manifest.json" {
 			nManifests++
 			return filepath.SkipDir
 		}
