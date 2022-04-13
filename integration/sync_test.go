@@ -100,6 +100,22 @@ func (s *SyncSuite) TearDownSuite(c *check.C) {
 	}
 }
 
+func assertNumberOfManifestsInSubdirs(c *check.C, dir string, expectedCount int) {
+	nManifests := 0
+	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if !info.IsDir() && info.Name() == "manifest.json" {
+			nManifests++
+			return filepath.SkipDir
+		}
+		return nil
+	})
+	c.Assert(err, check.IsNil)
+	c.Assert(nManifests, check.Equals, expectedCount)
+}
+
 func (s *SyncSuite) TestDocker2DirTagged(c *check.C) {
 	tmpDir := c.MkDir()
 
@@ -280,21 +296,7 @@ func (s *SyncSuite) TestYamlUntagged(c *check.C) {
 	c.Assert(err, check.IsNil)
 	c.Check(len(localTags), check.Not(check.Equals), 0)
 	c.Assert(len(localTags), check.Equals, len(tags))
-
-	nManifests := 0
-	//count the number of manifest.json in dir1
-	err = filepath.Walk(dir1, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		if !info.IsDir() && info.Name() == "manifest.json" {
-			nManifests++
-			return filepath.SkipDir
-		}
-		return nil
-	})
-	c.Assert(err, check.IsNil)
-	c.Assert(nManifests, check.Equals, len(tags))
+	assertNumberOfManifestsInSubdirs(c, dir1, len(tags))
 }
 
 func (s *SyncSuite) TestYamlRegex2Dir(c *check.C) {
@@ -314,20 +316,7 @@ k8s.gcr.io:
 	err := os.WriteFile(yamlFile, []byte(yamlConfig), 0644)
 	c.Assert(err, check.IsNil)
 	assertSkopeoSucceeds(c, "", "sync", "--scoped", "--src", "yaml", "--dest", "dir", yamlFile, dir1)
-
-	nManifests := 0
-	err = filepath.Walk(dir1, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		if !info.IsDir() && info.Name() == "manifest.json" {
-			nManifests++
-			return filepath.SkipDir
-		}
-		return nil
-	})
-	c.Assert(err, check.IsNil)
-	c.Assert(nManifests, check.Equals, nTags)
+	assertNumberOfManifestsInSubdirs(c, dir1, nTags)
 }
 
 func (s *SyncSuite) TestYamlDigest2Dir(c *check.C) {
@@ -344,20 +333,7 @@ k8s.gcr.io:
 	err := os.WriteFile(yamlFile, []byte(yamlConfig), 0644)
 	c.Assert(err, check.IsNil)
 	assertSkopeoSucceeds(c, "", "sync", "--scoped", "--src", "yaml", "--dest", "dir", yamlFile, dir1)
-
-	nManifests := 0
-	err = filepath.Walk(dir1, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		if !info.IsDir() && info.Name() == "manifest.json" {
-			nManifests++
-			return filepath.SkipDir
-		}
-		return nil
-	})
-	c.Assert(err, check.IsNil)
-	c.Assert(nManifests, check.Equals, 1)
+	assertNumberOfManifestsInSubdirs(c, dir1, 1)
 }
 
 func (s *SyncSuite) TestYaml2Dir(c *check.C) {
@@ -395,20 +371,7 @@ quay.io:
 	err := os.WriteFile(yamlFile, []byte(yamlConfig), 0644)
 	c.Assert(err, check.IsNil)
 	assertSkopeoSucceeds(c, "", "sync", "--scoped", "--src", "yaml", "--dest", "dir", yamlFile, dir1)
-
-	nManifests := 0
-	err = filepath.Walk(dir1, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		if !info.IsDir() && info.Name() == "manifest.json" {
-			nManifests++
-			return filepath.SkipDir
-		}
-		return nil
-	})
-	c.Assert(err, check.IsNil)
-	c.Assert(nManifests, check.Equals, nTags)
+	assertNumberOfManifestsInSubdirs(c, dir1, nTags)
 }
 
 func (s *SyncSuite) TestYamlTLSVerify(c *check.C) {
