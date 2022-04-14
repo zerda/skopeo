@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -193,7 +192,7 @@ func (cluster *openshiftCluster) startRegistry(c *check.C) {
 		// The default configuration currently already contains acceptschema2: false
 	})
 	// Make sure the configuration contains "acceptschema2: false", because eventually it will be enabled upstream and this function will need to be updated.
-	configContents, err := ioutil.ReadFile(schema1Config)
+	configContents, err := os.ReadFile(schema1Config)
 	c.Assert(err, check.IsNil)
 	c.Assert(string(configContents), check.Matches, "(?s).*acceptschema2: false.*")
 	cluster.processes = append(cluster.processes, cluster.startRegistryProcess(c, 5005, schema1Config))
@@ -237,7 +236,7 @@ func (cluster *openshiftCluster) dockerLogin(c *check.C) {
 			}`, port, authValue))
 	}
 	configJSON := `{"auths": {` + strings.Join(auths, ",") + `}}`
-	err = ioutil.WriteFile(filepath.Join(cluster.dockerDir, "config.json"), []byte(configJSON), 0600)
+	err = os.WriteFile(filepath.Join(cluster.dockerDir, "config.json"), []byte(configJSON), 0600)
 	c.Assert(err, check.IsNil)
 }
 

@@ -6,7 +6,7 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io/fs"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -73,7 +73,7 @@ func (s *CopySuite) SetUpSuite(c *check.C) {
 		runCommandWithInput(c, batchInput, gpgBinary, "--batch", "--gen-key")
 
 		out := combinedOutputOfCommand(c, gpgBinary, "--armor", "--export", fmt.Sprintf("%s@example.com", key))
-		err := ioutil.WriteFile(filepath.Join(s.gpgHome, fmt.Sprintf("%s-pubkey.gpg", key)),
+		err := os.WriteFile(filepath.Join(s.gpgHome, fmt.Sprintf("%s-pubkey.gpg", key)),
 			[]byte(out), 0600)
 		c.Assert(err, check.IsNil)
 	}
@@ -134,7 +134,7 @@ func (s *CopySuite) TestCopyNoneWithManifestList(c *check.C) {
 	assertSkopeoSucceeds(c, "", "copy", "--multi-arch=index-only", knownListImage, "dir:"+dir1)
 
 	manifestPath := filepath.Join(dir1, "manifest.json")
-	readManifest, err := ioutil.ReadFile(manifestPath)
+	readManifest, err := os.ReadFile(manifestPath)
 	c.Assert(err, check.IsNil)
 	mimeType := manifest.GuessMIMEType(readManifest)
 	c.Assert(mimeType, check.Equals, "application/vnd.docker.distribution.manifest.list.v2+json")
@@ -209,7 +209,7 @@ func (s *CopySuite) TestCopyWithDigestfileOutput(c *check.C) {
 	dir1 := c.MkDir()
 	digestOutPath := filepath.Join(tempdir, "digest.txt")
 	assertSkopeoSucceeds(c, "", "copy", "--digestfile="+digestOutPath, knownListImage, "dir:"+dir1)
-	readDigest, err := ioutil.ReadFile(digestOutPath)
+	readDigest, err := os.ReadFile(digestOutPath)
 	c.Assert(err, check.IsNil)
 	_, err = digest.Parse(string(readDigest))
 	c.Assert(err, check.IsNil)
@@ -490,9 +490,9 @@ func (s *CopySuite) TestCopyEncryption(c *check.C) {
 	privateKeyBytes := x509.MarshalPKCS1PrivateKey(privateKey)
 	publicKeyBytes, err := x509.MarshalPKIXPublicKey(publicKey)
 	c.Assert(err, check.IsNil)
-	err = ioutil.WriteFile(keysDir+"/private.key", privateKeyBytes, 0644)
+	err = os.WriteFile(keysDir+"/private.key", privateKeyBytes, 0644)
 	c.Assert(err, check.IsNil)
-	err = ioutil.WriteFile(keysDir+"/public.key", publicKeyBytes, 0644)
+	err = os.WriteFile(keysDir+"/public.key", publicKeyBytes, 0644)
 	c.Assert(err, check.IsNil)
 
 	// We can either perform encryption or decryption on the image.
@@ -516,7 +516,7 @@ func (s *CopySuite) TestCopyEncryption(c *check.C) {
 	invalidPrivateKey, err := rsa.GenerateKey(rand.Reader, 4096)
 	c.Assert(err, check.IsNil)
 	invalidPrivateKeyBytes := x509.MarshalPKCS1PrivateKey(invalidPrivateKey)
-	err = ioutil.WriteFile(keysDir+"/invalid_private.key", invalidPrivateKeyBytes, 0644)
+	err = os.WriteFile(keysDir+"/invalid_private.key", invalidPrivateKeyBytes, 0644)
 	c.Assert(err, check.IsNil)
 	assertSkopeoFails(c, ".*no suitable key unwrapper found or none of the private keys could be used for decryption.*",
 		"copy", "--decryption-key", keysDir+"/invalid_private.key",
@@ -556,7 +556,7 @@ func (s *CopySuite) TestCopyEncryption(c *check.C) {
 }
 
 func matchLayerBlobBinaryType(c *check.C, ociImageDirPath string, contentType string, matchCount int) {
-	files, err := ioutil.ReadDir(ociImageDirPath)
+	files, err := os.ReadDir(ociImageDirPath)
 	c.Assert(err, check.IsNil)
 
 	foundCount := 0
@@ -592,7 +592,7 @@ func assertDirImagesAreEqual(c *check.C, dir1, dir2 string) {
 	digests := []digest.Digest{}
 	for _, dir := range []string{dir1, dir2} {
 		manifestPath := filepath.Join(dir, "manifest.json")
-		m, err := ioutil.ReadFile(manifestPath)
+		m, err := os.ReadFile(manifestPath)
 		c.Assert(err, check.IsNil)
 		digest, err := manifest.Digest(m)
 		c.Assert(err, check.IsNil)
@@ -610,7 +610,7 @@ func assertSchema1DirImagesAreEqualExceptNames(c *check.C, dir1, ref1, dir2, ref
 	manifests := []map[string]interface{}{}
 	for dir, ref := range map[string]string{dir1: ref1, dir2: ref2} {
 		manifestPath := filepath.Join(dir, "manifest.json")
-		m, err := ioutil.ReadFile(manifestPath)
+		m, err := os.ReadFile(manifestPath)
 		c.Assert(err, check.IsNil)
 		data := map[string]interface{}{}
 		err = json.Unmarshal(m, &data)
@@ -832,15 +832,15 @@ func (s *CopySuite) TestCopyCompression(c *check.C) {
 
 func findRegularFiles(c *check.C, root string) []string {
 	result := []string{}
-	err := filepath.Walk(root, filepath.WalkFunc(func(path string, info os.FileInfo, err error) error {
+	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
-		if info.Mode().IsRegular() {
+		if d.Type().IsRegular() {
 			result = append(result, path)
 		}
 		return nil
-	}))
+	})
 	c.Assert(err, check.IsNil)
 	return result
 }

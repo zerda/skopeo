@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"strings"
 
@@ -122,7 +121,7 @@ func (opts *layersOptions) run(args []string, stdout io.Writer) (retErr error) {
 		}
 	}
 
-	tmpDir, err := ioutil.TempDir(".", "layers-")
+	tmpDir, err := os.MkdirTemp(".", "layers-")
 	if err != nil {
 		return err
 	}
