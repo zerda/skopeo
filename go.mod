@@ -3,10 +3,10 @@ module github.com/containers/skopeo
 go 1.16
 
 require (
-	github.com/containers/common v0.47.5
-	github.com/containers/image/v5 v5.20.1-0.20220330152611-fcf8ddafd1f1
+	github.com/containers/common v0.47.5-0.20220421111103-112a47964ddb
+	github.com/containers/image/v5 v5.21.1-0.20220421124950-8527e238867c
 	github.com/containers/ocicrypt v1.1.3
-	github.com/containers/storage v1.39.0
+	github.com/containers/storage v1.39.1-0.20220421071128-4899f8265d63
 	github.com/docker/docker v20.10.14+incompatible
 	github.com/dsnet/compress v0.0.2-0.20210315054119-f66993602bf5 // indirect
 	github.com/opencontainers/go-digest v1.0.0
