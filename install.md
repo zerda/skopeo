@@ -73,17 +73,6 @@ sudo apt-get -y update
 sudo apt-get -y install skopeo
 ```
 
-The [Kubic project](https://build.opensuse.org/package/show/devel:kubic:libcontainers:stable/skopeo)
-provides packages for Ubuntu 20.04 (it should also work with direct derivatives like Pop!\_OS).
-
-```bash
-. /etc/os-release
-echo "deb https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_${VERSION_ID}/ /" | sudo tee /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list
-curl -L https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_${VERSION_ID}/Release.key | sudo apt-key add -
-sudo apt-get update
-sudo apt-get -y install skopeo
-```
-
 ### Windows
 Skopeo has not yet been packaged for Windows. There is an [open feature
 request](https://github.com/containers/skopeo/issues/715) and contributions are
