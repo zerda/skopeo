@@ -13,7 +13,11 @@ GPGME_ENV := CGO_CFLAGS="$(shell gpgme-config --cflags 2>/dev/null)" CGO_LDFLAGS
 # The following variables very roughly follow https://www.gnu.org/prep/standards/standards.html#Makefile-Conventions .
 DESTDIR ?=
 PREFIX ?= /usr/local
+ifeq ($(shell uname -s),FreeBSD)
+CONTAINERSCONFDIR ?= /usr/local/etc/containers
+else
 CONTAINERSCONFDIR ?= /etc/containers
+endif
 REGISTRIESDDIR ?= ${CONTAINERSCONFDIR}/registries.d
 SIGSTOREDIR ?= /var/lib/containers/sigstore
 BINDIR ?= ${PREFIX}/bin
