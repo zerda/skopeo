@@ -212,6 +212,13 @@ Building in a container is simpler, but more restrictive:
 $ make binary
 ```
 
+### Shell completion scripts
+
+Skopeo has shell completion scripts for bash, zsh, fish and powershell. They are installed as part of `make install`.
+You may have to restart your shell in order for them to take effect.
+
+For instructions to manually generate and load the scripts please see `skopeo completion --help`.
+
 ### Installation
 
 Finally, after the binary and documentation is built:
