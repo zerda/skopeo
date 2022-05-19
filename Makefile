@@ -2,14 +2,6 @@
 
 export GOPROXY=https://proxy.golang.org
 
-# On some platforms (eg. macOS, FreeBSD) gpgme is installed in /usr/local/ but /usr/local/include/ is
-# not in the default search path. Rather than hard-code this directory, use gpgme-config.
-# Sadly that must be done at the top-level user instead of locally in the gpgme subpackage, because cgo
-# supports only pkg-config, not general shell scripts, and gpgme does not install a pkg-config file.
-# If gpgme is not installed or gpgme-config can’t be found for other reasons, the error is silently ignored
-# (and the user will probably find out because the cgo compilation will fail).
-GPGME_ENV := CGO_CFLAGS="$(shell gpgme-config --cflags 2>/dev/null)" CGO_LDFLAGS="$(shell gpgme-config --libs 2>/dev/null)"
-
 # The following variables very roughly follow https://www.gnu.org/prep/standards/standards.html#Makefile-Conventions .
 DESTDIR ?=
 PREFIX ?= /usr/local
@@ -141,7 +133,7 @@ binary: cmd/skopeo
 # Build w/o using containers
 .PHONY: bin/skopeo
 bin/skopeo:
-	$(GPGME_ENV) $(GO) build $(MOD_VENDOR) ${GO_DYN_FLAGS} ${SKOPEO_LDFLAGS} -gcflags "$(GOGCFLAGS)" -tags "$(BUILDTAGS)" -o $@ ./cmd/skopeo
+	$(GO) build $(MOD_VENDOR) ${GO_DYN_FLAGS} ${SKOPEO_LDFLAGS} -gcflags "$(GOGCFLAGS)" -tags "$(BUILDTAGS)" -o $@ ./cmd/skopeo
 bin/skopeo.%:
 	GOOS=$(word 2,$(subst ., ,$@)) GOARCH=$(word 3,$(subst ., ,$@)) $(GO) build $(MOD_VENDOR) ${SKOPEO_LDFLAGS} -tags "containers_image_openpgp $(BUILDTAGS)" -o $@ ./cmd/skopeo
 local-cross: bin/skopeo.darwin.amd64 bin/skopeo.linux.arm bin/skopeo.linux.arm64 bin/skopeo.windows.386.exe bin/skopeo.windows.amd64.exe
@@ -231,7 +223,7 @@ validate-docs:
 	hack/xref-helpmsgs-manpages
 
 test-unit-local: bin/skopeo
-	$(GPGME_ENV) $(GO) test $(MOD_VENDOR) -tags "$(BUILDTAGS)" $$($(GO) list $(MOD_VENDOR) -tags "$(BUILDTAGS)" -e ./... | grep -v '^github\.com/containers/skopeo/\(integration\|vendor/.*\)$$')
+	$(GO) test $(MOD_VENDOR) -tags "$(BUILDTAGS)" $$($(GO) list $(MOD_VENDOR) -tags "$(BUILDTAGS)" -e ./... | grep -v '^github\.com/containers/skopeo/\(integration\|vendor/.*\)$$')
 
 vendor:
 	$(GO) mod tidy
