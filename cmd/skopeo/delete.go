@@ -35,8 +35,9 @@ Supported transports:
 %s
 See skopeo(1) section "IMAGE NAMES" for the expected format
 `, strings.Join(transports.ListNames(), ", ")),
-		RunE:    commandAction(opts.run),
-		Example: `skopeo delete docker://registry.example.com/example/pause:latest`,
+		RunE:              commandAction(opts.run),
+		Example:           `skopeo delete docker://registry.example.com/example/pause:latest`,
+		ValidArgsFunction: autocompleteSupportedTransports,
 	}
 	adjustUsage(cmd)
 	flags := cmd.Flags()

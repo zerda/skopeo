@@ -22,7 +22,10 @@ REGISTRIESDDIR ?= ${CONTAINERSCONFDIR}/registries.d
 SIGSTOREDIR ?= /var/lib/containers/sigstore
 BINDIR ?= ${PREFIX}/bin
 MANDIR ?= ${PREFIX}/share/man
-BASHCOMPLETIONSDIR ?= ${PREFIX}/share/bash-completion/completions
+
+BASHINSTALLDIR=${PREFIX}/share/bash-completion/completions
+ZSHINSTALLDIR=${PREFIX}/share/zsh/site-functions
+FISHINSTALLDIR=${PREFIX}/share/fish/vendor_completions.d
 
 GO ?= go
 GOBIN := $(shell $(GO) env GOBIN)
@@ -156,8 +159,16 @@ docs: $(MANPAGES)
 docs-in-container:
 	${CONTAINER_RUN} $(MAKE) docs $(if $(DEBUG),DEBUG=$(DEBUG))
 
+.PHONY: completions
+completions: bin/skopeo
+	install -d -m 755 completions/{bash,zsh,fish,powershell}
+	./bin/skopeo completion bash >| completions/bash/skopeo
+	./bin/skopeo completion zsh >| completions/zsh/_skopeo
+	./bin/skopeo completion fish >| completions/fish/skopeo.fish
+	./bin/skopeo completion powershell >| completions/powershell/skopeo.ps1
+
 clean:
-	rm -rf bin docs/*.1
+	rm -rf bin docs/*.1 completions/
 
 install: install-binary install-docs install-completions
 	install -d -m 755 ${DESTDIR}${SIGSTOREDIR}
@@ -176,9 +187,14 @@ ifneq ($(DISABLE_DOCS), 1)
 	install -m 644 docs/*.1 ${DESTDIR}${MANDIR}/man1
 endif
 
-install-completions:
-	install -m 755 -d ${DESTDIR}${BASHCOMPLETIONSDIR}
-	install -m 644 completions/bash/skopeo ${DESTDIR}${BASHCOMPLETIONSDIR}/skopeo
+install-completions: completions
+	install -d -m 755 ${DESTDIR}${BASHINSTALLDIR}
+	install -m 644 completions/bash/skopeo ${DESTDIR}${BASHINSTALLDIR}
+	install -d -m 755 ${DESTDIR}${ZSHINSTALLDIR}
+	install -m 644 completions/zsh/_skopeo ${DESTDIR}${ZSHINSTALLDIR}
+	install -d -m 755 ${DESTDIR}${FISHINSTALLDIR}
+	install -m 644 completions/fish/skopeo.fish ${DESTDIR}${FISHINSTALLDIR}
+	# There is no common location for powershell files so do not install them. Users have to source the file from their powershell profile.
 
 shell:
 	$(CONTAINER_RUN) bash

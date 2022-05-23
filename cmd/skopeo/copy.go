@@ -64,8 +64,9 @@ Supported transports:
 
 See skopeo(1) section "IMAGE NAMES" for the expected format
 `, strings.Join(transports.ListNames(), ", ")),
-		RunE:    commandAction(opts.run),
-		Example: `skopeo copy docker://quay.io/skopeo/stable:latest docker://registry.example.com/skopeo:latest`,
+		RunE:              commandAction(opts.run),
+		Example:           `skopeo copy docker://quay.io/skopeo/stable:latest docker://registry.example.com/skopeo:latest`,
+		ValidArgsFunction: autocompleteSupportedTransports,
 	}
 	adjustUsage(cmd)
 	flags := cmd.Flags()
