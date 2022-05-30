@@ -153,7 +153,7 @@ docs-in-container:
 
 .PHONY: completions
 completions: bin/skopeo
-	install -d -m 755 completions/{bash,zsh,fish,powershell}
+	install -d -m 755 completions/bash completions/zsh completions/fish completions/powershell
 	./bin/skopeo completion bash >| completions/bash/skopeo
 	./bin/skopeo completion zsh >| completions/zsh/_skopeo
 	./bin/skopeo completion fish >| completions/fish/skopeo.fish
