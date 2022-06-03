@@ -1,4 +1,4 @@
-# upstream/Dockerfile
+# upstream/Containerfile
 #
 # Build a Skopeo container image from the latest
 # upstream version of Skopeo on GitHub.
@@ -12,7 +12,7 @@ FROM registry.fedoraproject.org/fedora:latest
 # directories used by yum that are just taking
 # up space.  Also reinstall shadow-utils as without
 # doing so, the setuid/setgid bits on newuidmap
-# and newgidmap are lost in the Fedora images. 
+# and newgidmap are lost in the Fedora images.
 RUN useradd skopeo; yum -y update; yum -y reinstall shadow-utils; \
 yum -y install make \
 golang \

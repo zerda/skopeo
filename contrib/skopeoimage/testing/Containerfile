@@ -1,7 +1,8 @@
-# stable/Dockerfile
+# testing/Containerfile
 #
 # Build a Skopeo container image from the latest
-# stable version of Skopeo on the Fedoras Updates System.
+# version of Skopeo that is in updates-testing
+# on the Fedoras Updates System.
 # https://bodhi.fedoraproject.org/updates/?search=skopeo
 # This image can be used to create a secured container
 # that runs safely with privileges within the container.
@@ -12,8 +13,8 @@ FROM registry.fedoraproject.org/fedora:latest
 # directories used by yum that are just taking
 # up space.  Also reinstall shadow-utils as without
 # doing so, the setuid/setgid bits on newuidmap
-# and newgidmap are lost in the Fedora images. 
-RUN useradd skopeo; yum -y update; yum -y reinstall shadow-utils; yum -y install skopeo fuse-overlayfs --exclude container-selinux; yum -y clean all; rm -rf /var/cache/dnf/* /var/log/dnf* /var/log/yum*
+# and newgidmap are lost in the Fedora images.
+RUN useradd skopeo; yum -y update; yum -y reinstall shadow-utils; yum -y install skopeo fuse-overlayfs --enablerepo updates-testing --exclude container-selinux; yum -y clean all; rm -rf /var/cache/dnf/* /var/log/dnf* /var/log/yum*
 
 # Adjust storage.conf to enable Fuse storage.
 RUN sed -i -e 's|^#mount_program|mount_program|g' -e '/additionalimage.*/a "/var/lib/shared",' -e 's|^mountopt[[:space:]]*=.*$|mountopt = "nodev,fsync=0"|g' /etc/containers/storage.conf
