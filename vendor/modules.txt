@@ -102,7 +102,7 @@ github.com/containers/image/v5/types
 github.com/containers/image/v5/version
 # github.com/containers/libtrust v0.0.0-20200511145503-9c3a6c22cd9a
 github.com/containers/libtrust
-# github.com/containers/ocicrypt v1.1.4
+# github.com/containers/ocicrypt v1.1.5
 ## explicit
 github.com/containers/ocicrypt
 github.com/containers/ocicrypt/blockcipher
@@ -506,5 +506,4 @@ gopkg.in/square/go-jose.v2/json
 ## explicit
 gopkg.in/yaml.v2
 # gopkg.in/yaml.v3 v3.0.0
-## explicit
 gopkg.in/yaml.v3
