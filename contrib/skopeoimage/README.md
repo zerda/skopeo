@@ -6,7 +6,7 @@
 
 ## Overview
 
-This directory contains the Dockerfiles necessary to create the skopeoimage container
+This directory contains the Containerfiles necessary to create the skopeoimage container
 images that are housed on quay.io under the skopeo account.  All repositories where
 the images live are public and can be pulled without credentials.  These container images are secured and the
 resulting containers can run safely with privileges within the container.
@@ -19,21 +19,22 @@ default to `/`.
 The container images are:
 
   * `quay.io/containers/skopeo:v<version>` and `quay.io/skopeo/stable:v<version>` -
-    These images are built when a new Skopeo version becomes available in
-    Fedora.  These images are intended to be unchanging and stable, they will
-    never be updated by automation once they've been pushed.  For build details,
-    please [see the configuration file](stable/Dockerfile).
+    These images are built daily.  These images are intended contain an unchanging
+    and stable version of skopeo.  For the most recent `<version>` tags (`vX`,
+    `vX.Y`, and `vX.Y.Z`) the image contents will be updated daily to incorporate
+    (especially) security updates.  For build details, please[see the configuration
+    file](stable/Containerfile).
   * `quay.io/containers/skopeo:latest` and `quay.io/skopeo/stable:latest` -
-    Built daily using the same Dockerfile as above.  The skopeo version
-    will remain the "latest" available in Fedora, however the image
+    Built daily using the same Containerfile as above.  The skopeo version
+    will remain the "latest" available in Fedora, however the other image
     contents may vary compared to the version-tagged images.
   * `quay.io/skopeo/testing:latest` - This image is built daily, using the
     latest version of Skopeo that was in the Fedora `updates-testing` repository.
-    The image is Built with [the testing Dockerfile](testing/Dockerfile).
+    The image is Built with [the testing Containerfile](testing/Containerfile).
   * `quay.io/skopeo/upstream:latest` - This image is built daily using the latest
     code found in this GitHub repository.  Due to the image changing frequently,
     it's not guaranteed to be stable or even executable.  The image is built with
-    [the upstream Dockerfile](upstream/Dockerfile).
+    [the upstream Containerfile](upstream/Containerfile).
 
 
 ## Sample Usage
