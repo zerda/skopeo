@@ -38,8 +38,7 @@ func TestStandaloneSign(t *testing.T) {
 
 	manifestPath := "fixtures/image.manifest.json"
 	dockerReference := "testing/manifest"
-	os.Setenv("GNUPGHOME", "fixtures")
-	defer os.Unsetenv("GNUPGHOME")
+	t.Setenv("GNUPGHOME", "fixtures")
 
 	// Invalid command-line arguments
 	for _, args := range [][]string{
@@ -101,8 +100,7 @@ func TestStandaloneVerify(t *testing.T) {
 	manifestPath := "fixtures/image.manifest.json"
 	signaturePath := "fixtures/image.signature"
 	dockerReference := "testing/manifest"
-	os.Setenv("GNUPGHOME", "fixtures")
-	defer os.Unsetenv("GNUPGHOME")
+	t.Setenv("GNUPGHOME", "fixtures")
 
 	// Invalid command-line arguments
 	for _, args := range [][]string{
