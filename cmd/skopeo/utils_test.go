@@ -1,7 +1,6 @@
 package main
 
 import (
-	"os"
 	"testing"
 
 	"github.com/containers/image/v5/manifest"
@@ -128,17 +127,9 @@ func TestImageDestOptionsNewSystemContext(t *testing.T) {
 		DockerRegistryUserAgent: defaultUserAgent,
 	}, res)
 
-	oldXRD, hasXRD := os.LookupEnv("REGISTRY_AUTH_FILE")
-	defer func() {
-		if hasXRD {
-			os.Setenv("REGISTRY_AUTH_FILE", oldXRD)
-		} else {
-			os.Unsetenv("REGISTRY_AUTH_FILE")
-		}
-	}()
 	authFile := "/tmp/auth.json"
 	// Make sure when REGISTRY_AUTH_FILE is set the auth file is used
-	os.Setenv("REGISTRY_AUTH_FILE", authFile)
+	t.Setenv("REGISTRY_AUTH_FILE", authFile)
 
 	// Explicitly set everything to default, except for when the default is “not present”
 	opts = fakeImageDestOptions(t, "dest-", true, []string{}, []string{
