@@ -22,7 +22,7 @@ const (
 	// A repository with a path with multiple components in it which
 	// contains multiple tags, preferably with some tags pointing to
 	// manifest lists, and with some tags that don't.
-	pullableRepo = "k8s.gcr.io/coredns/coredns"
+	pullableRepo = "quay.io/libpod/testimage"
 	// A tagged image in the repository that we can inspect and copy.
 	pullableTaggedImage = "k8s.gcr.io/coredns/coredns:v1.6.6"
 	// A tagged manifest list in the repository that we can inspect and copy.
