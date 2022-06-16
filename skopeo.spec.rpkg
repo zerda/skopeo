@@ -1,5 +1,8 @@
 # For automatic rebuilds in COPR
 
+# CAUTION: This is not a replacement for RPMs provided by your distro.
+# Only intended to build and test the latest unreleased changes.
+
 # The following tag is to get correct syntax highlighting for this file in vim text editor
 # vim: syntax=spec
 
