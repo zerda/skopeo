@@ -1,10 +1,13 @@
 # For automatic rebuilds in COPR
 
-# CAUTION: This is not a replacement for RPMs provided by your distro.
-# Only intended to build and test the latest unreleased changes.
-
 # The following tag is to get correct syntax highlighting for this file in vim text editor
 # vim: syntax=spec
+
+# Any additinoal comments should go below this line or else syntax highlighting
+# may not work.
+
+# CAUTION: This is not a replacement for RPMs provided by your distro.
+# Only intended to build and test the latest unreleased changes.
 
 %global gomodulesmode GO111MODULE=on
 %global with_debug 1
