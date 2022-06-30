@@ -105,7 +105,7 @@ func (opts *inspectOptions) run(args []string, stdout io.Writer) (retErr error) 
 
 	defer func() {
 		if err := src.Close(); err != nil {
-			retErr = noteCloseFailure(retErr, "could not close image", err)
+			retErr = noteCloseFailure(retErr, "closing image", err)
 		}
 	}()
 

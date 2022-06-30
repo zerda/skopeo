@@ -79,14 +79,14 @@ func (opts *layersOptions) run(args []string, stdout io.Writer) (retErr error) {
 		return err
 	}, opts.retryOpts); err != nil {
 		if closeErr := rawSource.Close(); closeErr != nil {
-			return errors.Wrapf(err, " (close error: %v)", closeErr)
+			return errors.Wrapf(err, " (closing image source: %v)", closeErr)
 		}
 
 		return err
 	}
 	defer func() {
 		if err := src.Close(); err != nil {
-			retErr = noteCloseFailure(retErr, "close error", err)
+			retErr = noteCloseFailure(retErr, "closing image", err)
 		}
 	}()
 
@@ -136,7 +136,7 @@ func (opts *layersOptions) run(args []string, stdout io.Writer) (retErr error) {
 
 	defer func() {
 		if err := dest.Close(); err != nil {
-			retErr = noteCloseFailure(retErr, "close error", err)
+			retErr = noteCloseFailure(retErr, "closing destination", err)
 		}
 	}()
 

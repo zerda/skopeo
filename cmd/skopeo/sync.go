@@ -514,7 +514,7 @@ func (opts *syncOptions) run(args []string, stdout io.Writer) (retErr error) {
 	}
 	defer func() {
 		if err := policyContext.Destroy(); err != nil {
-			retErr = noteCloseFailure(retErr, "error tearing down policy context", err)
+			retErr = noteCloseFailure(retErr, "tearing down policy context", err)
 		}
 	}()
 
