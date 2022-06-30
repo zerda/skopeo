@@ -1,9 +1,10 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/containers/image/v5/transports/alltransports"
 	"github.com/containers/storage/pkg/unshare"
-	"github.com/pkg/errors"
 	"github.com/syndtr/gocapability/capability"
 )
 
@@ -22,7 +23,7 @@ func maybeReexec() error {
 	// if we already have the capabilities we need.
 	capabilities, err := capability.NewPid(0)
 	if err != nil {
-		return errors.Wrapf(err, "error reading the current capabilities sets")
+		return fmt.Errorf("error reading the current capabilities sets: %w", err)
 	}
 	for _, cap := range neededCapabilities {
 		if !capabilities.Get(capability.EFFECTIVE, cap) {
