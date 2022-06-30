@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/containers/image/v5/manifest"
@@ -11,6 +12,27 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestNoteCloseFailure(t *testing.T) {
+	const description = "description"
+
+	mainErr := errors.New("main")
+	closeErr := errors.New("closing")
+
+	// Main success, closing failed
+	res := noteCloseFailure(nil, description, closeErr)
+	require.NotNil(t, res)
+	assert.Contains(t, res.Error(), description)
+	assert.Contains(t, res.Error(), closeErr.Error())
+
+	// Both main and closing failed
+	res = noteCloseFailure(mainErr, description, closeErr)
+	require.NotNil(t, res)
+	assert.Contains(t, res.Error(), mainErr.Error())
+	assert.Contains(t, res.Error(), description)
+	assert.Contains(t, res.Error(), closeErr.Error())
+	assert.ErrorIs(t, res, mainErr)
+}
 
 // fakeGlobalOptions creates globalOptions and sets it according to flags.
 func fakeGlobalOptions(t *testing.T, flags []string) (*globalOptions, *cobra.Command) {

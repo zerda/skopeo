@@ -86,7 +86,7 @@ func (opts *layersOptions) run(args []string, stdout io.Writer) (retErr error) {
 	}
 	defer func() {
 		if err := src.Close(); err != nil {
-			retErr = errors.Wrapf(retErr, " (close error: %v)", err)
+			retErr = noteCloseFailure(retErr, "close error", err)
 		}
 	}()
 
@@ -136,7 +136,7 @@ func (opts *layersOptions) run(args []string, stdout io.Writer) (retErr error) {
 
 	defer func() {
 		if err := dest.Close(); err != nil {
-			retErr = errors.Wrapf(retErr, " (close error: %v)", err)
+			retErr = noteCloseFailure(retErr, "close error", err)
 		}
 	}()
 

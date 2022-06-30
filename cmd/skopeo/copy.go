@@ -130,7 +130,7 @@ func (opts *copyOptions) run(args []string, stdout io.Writer) (retErr error) {
 	}
 	defer func() {
 		if err := policyContext.Destroy(); err != nil {
-			retErr = fmt.Errorf("(error tearing down policy context: %v): %w", err, retErr)
+			retErr = noteCloseFailure(retErr, "error tearing down policy context", err)
 		}
 	}()
 
