@@ -54,7 +54,8 @@ func noteCloseFailure(err error, description string, closeErr error) error {
 func commandAction(handler func(args []string, stdout io.Writer) error) func(cmd *cobra.Command, args []string) error {
 	return func(c *cobra.Command, args []string) error {
 		err := handler(args, c.OutOrStdout())
-		if _, ok := err.(errorShouldDisplayUsage); ok {
+		var shouldDisplayUsage errorShouldDisplayUsage
+		if errors.As(err, &shouldDisplayUsage) {
 			return c.Help()
 		}
 		return err
