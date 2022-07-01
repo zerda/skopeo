@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"sort"
@@ -14,7 +15,6 @@ import (
 	"github.com/containers/image/v5/docker/reference"
 	"github.com/containers/image/v5/transports/alltransports"
 	"github.com/containers/image/v5/types"
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
 
@@ -81,12 +81,12 @@ See skopeo-list-tags(1) section "REPOSITORY NAMES" for the expected format
 // Would really love to not have this, but needed to enforce tag-less and digest-less names
 func parseDockerRepositoryReference(refString string) (types.ImageReference, error) {
 	if !strings.HasPrefix(refString, docker.Transport.Name()+"://") {
-		return nil, errors.Errorf("docker: image reference %s does not start with %s://", refString, docker.Transport.Name())
+		return nil, fmt.Errorf("docker: image reference %s does not start with %s://", refString, docker.Transport.Name())
 	}
 
 	parts := strings.SplitN(refString, ":", 2)
 	if len(parts) != 2 {
-		return nil, errors.Errorf(`Invalid image name "%s", expected colon-separated transport:reference`, refString)
+		return nil, fmt.Errorf(`Invalid image name "%s", expected colon-separated transport:reference`, refString)
 	}
 
 	ref, err := reference.ParseNormalizedNamed(strings.TrimPrefix(parts[1], "//"))
@@ -108,7 +108,7 @@ func listDockerTags(ctx context.Context, sys *types.SystemContext, imgRef types.
 
 	tags, err := docker.GetRepositoryTags(ctx, sys, imgRef)
 	if err != nil {
-		return ``, nil, fmt.Errorf("Error listing repository tags: %v", err)
+		return ``, nil, fmt.Errorf("Error listing repository tags: %w", err)
 	}
 	return repositoryName, tags, nil
 }

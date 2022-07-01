@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -21,7 +22,6 @@ import (
 	"github.com/containers/image/v5/transports"
 	"github.com/containers/image/v5/types"
 	"github.com/opencontainers/go-digest"
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
@@ -146,7 +146,7 @@ func newSourceConfig(yamlFile string) (sourceConfig, error) {
 	}
 	err = yaml.Unmarshal(source, &cfg)
 	if err != nil {
-		return cfg, errors.Wrapf(err, "Failed to unmarshal %q", yamlFile)
+		return cfg, fmt.Errorf("Failed to unmarshal %q: %w", yamlFile, err)
 	}
 	return cfg, nil
 }
@@ -158,7 +158,7 @@ func parseRepositoryReference(input string) (reference.Named, error) {
 		return nil, err
 	}
 	if !reference.IsNameOnly(ref) {
-		return nil, errors.Errorf("input names a reference, not a repository")
+		return nil, errors.New("input names a reference, not a repository")
 	}
 	return ref, nil
 }
@@ -176,24 +176,24 @@ func destinationReference(destination string, transport string) (types.ImageRefe
 	case directory.Transport.Name():
 		_, err := os.Stat(destination)
 		if err == nil {
-			return nil, errors.Errorf("Refusing to overwrite destination directory %q", destination)
+			return nil, fmt.Errorf("Refusing to overwrite destination directory %q", destination)
 		}
 		if !os.IsNotExist(err) {
-			return nil, errors.Wrap(err, "Destination directory could not be used")
+			return nil, fmt.Errorf("Destination directory could not be used: %w", err)
 		}
 		// the directory holding the image must be created here
 		if err = os.MkdirAll(destination, 0755); err != nil {
-			return nil, errors.Wrapf(err, "Error creating directory for image %s", destination)
+			return nil, fmt.Errorf("Error creating directory for image %s: %w", destination, err)
 		}
 		imageTransport = directory.Transport
 	default:
-		return nil, errors.Errorf("%q is not a valid destination transport", transport)
+		return nil, fmt.Errorf("%q is not a valid destination transport", transport)
 	}
 	logrus.Debugf("Destination for transport %q: %s", transport, destination)
 
 	destRef, err := imageTransport.ParseReference(destination)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Cannot obtain a valid image reference for transport %q and reference %q", imageTransport.Name(), destination)
+		return nil, fmt.Errorf("Cannot obtain a valid image reference for transport %q and reference %q: %w", imageTransport.Name(), destination, err)
 	}
 
 	return destRef, nil
@@ -213,16 +213,16 @@ func getImageTags(ctx context.Context, sysCtx *types.SystemContext, repoRef refe
 		return nil, err // Should never happen for a reference with tag and no digest
 	}
 	tags, err := docker.GetRepositoryTags(ctx, sysCtx, dockerRef)
-
-	switch err := err.(type) {
-	case nil:
-		break
-	case docker.ErrUnauthorizedForCredentials:
-		// Some registries may decide to block the "list all tags" endpoint.
-		// Gracefully allow the sync to continue in this case.
-		logrus.Warnf("Registry disallows tag list retrieval: %s", err)
-	default:
-		return tags, errors.Wrapf(err, "Error determining repository tags for image %s", name)
+	if err != nil {
+		var unauthorizedForCredentials docker.ErrUnauthorizedForCredentials
+		if errors.As(err, &unauthorizedForCredentials) {
+			// Some registries may decide to block the "list all tags" endpoint.
+			// Gracefully allow the sync to continue in this case.
+			logrus.Warnf("Registry disallows tag list retrieval: %s", err)
+			tags = nil
+		} else {
+			return nil, fmt.Errorf("Error determining repository tags for image %s: %w", name, err)
+		}
 	}
 
 	return tags, nil
@@ -242,11 +242,11 @@ func imagesToCopyFromRepo(sys *types.SystemContext, repoRef reference.Named) ([]
 	for _, tag := range tags {
 		taggedRef, err := reference.WithTag(repoRef, tag)
 		if err != nil {
-			return nil, errors.Wrapf(err, "Error creating a reference for repository %s and tag %q", repoRef.Name(), tag)
+			return nil, fmt.Errorf("Error creating a reference for repository %s and tag %q: %w", repoRef.Name(), tag, err)
 		}
 		ref, err := docker.NewReference(taggedRef)
 		if err != nil {
-			return nil, errors.Wrapf(err, "Cannot obtain a valid image reference for transport %q and reference %s", docker.Transport.Name(), taggedRef.String())
+			return nil, fmt.Errorf("Cannot obtain a valid image reference for transport %q and reference %s: %w", docker.Transport.Name(), taggedRef.String(), err)
 		}
 		sourceReferences = append(sourceReferences, ref)
 	}
@@ -267,7 +267,7 @@ func imagesToCopyFromDir(dirPath string) ([]types.ImageReference, error) {
 			dirname := filepath.Dir(path)
 			ref, err := directory.Transport.ParseReference(dirname)
 			if err != nil {
-				return errors.Wrapf(err, "Cannot obtain a valid image reference for transport %q and reference %q", directory.Transport.Name(), dirname)
+				return fmt.Errorf("Cannot obtain a valid image reference for transport %q and reference %q: %w", directory.Transport.Name(), dirname, err)
 			}
 			sourceReferences = append(sourceReferences, ref)
 			return filepath.SkipDir
@@ -277,7 +277,7 @@ func imagesToCopyFromDir(dirPath string) ([]types.ImageReference, error) {
 
 	if err != nil {
 		return sourceReferences,
-			errors.Wrapf(err, "Error walking the path %q", dirPath)
+			fmt.Errorf("Error walking the path %q: %w", dirPath, err)
 	}
 
 	return sourceReferences, nil
@@ -435,7 +435,7 @@ func imagesToCopy(source string, transport string, sourceCtx *types.SystemContex
 		}
 		named, err := reference.ParseNormalizedNamed(source) // May be a repository or an image.
 		if err != nil {
-			return nil, errors.Wrapf(err, "Cannot obtain a valid image reference for transport %q and reference %q", docker.Transport.Name(), source)
+			return nil, fmt.Errorf("Cannot obtain a valid image reference for transport %q and reference %q: %w", docker.Transport.Name(), source, err)
 		}
 		imageTagged := !reference.IsNameOnly(named)
 		logrus.WithFields(logrus.Fields{
@@ -445,7 +445,7 @@ func imagesToCopy(source string, transport string, sourceCtx *types.SystemContex
 		if imageTagged {
 			srcRef, err := docker.NewReference(named)
 			if err != nil {
-				return nil, errors.Wrapf(err, "Cannot obtain a valid image reference for transport %q and reference %q", docker.Transport.Name(), named.String())
+				return nil, fmt.Errorf("Cannot obtain a valid image reference for transport %q and reference %q: %w", docker.Transport.Name(), named.String(), err)
 			}
 			desc.ImageRefs = []types.ImageReference{srcRef}
 		} else {
@@ -454,7 +454,7 @@ func imagesToCopy(source string, transport string, sourceCtx *types.SystemContex
 				return descriptors, err
 			}
 			if len(desc.ImageRefs) == 0 {
-				return descriptors, errors.Errorf("No images to sync found in %q", source)
+				return descriptors, fmt.Errorf("No images to sync found in %q", source)
 			}
 		}
 		descriptors = append(descriptors, desc)
@@ -465,7 +465,7 @@ func imagesToCopy(source string, transport string, sourceCtx *types.SystemContex
 		}
 
 		if _, err := os.Stat(source); err != nil {
-			return descriptors, errors.Wrap(err, "Invalid source directory specified")
+			return descriptors, fmt.Errorf("Invalid source directory specified: %w", err)
 		}
 		desc.DirBasePath = source
 		var err error
@@ -474,7 +474,7 @@ func imagesToCopy(source string, transport string, sourceCtx *types.SystemContex
 			return descriptors, err
 		}
 		if len(desc.ImageRefs) == 0 {
-			return descriptors, errors.Errorf("No images to sync found in %q", source)
+			return descriptors, fmt.Errorf("No images to sync found in %q", source)
 		}
 		descriptors = append(descriptors, desc)
 
@@ -493,7 +493,7 @@ func imagesToCopy(source string, transport string, sourceCtx *types.SystemContex
 
 			descs, err := imagesToCopyFromRegistry(registryName, registryConfig, *sourceCtx)
 			if err != nil {
-				return descriptors, errors.Wrapf(err, "Failed to retrieve list of images from registry %q", registryName)
+				return descriptors, fmt.Errorf("Failed to retrieve list of images from registry %q: %w", registryName, err)
 			}
 			descriptors = append(descriptors, descs...)
 		}
@@ -510,11 +510,11 @@ func (opts *syncOptions) run(args []string, stdout io.Writer) (retErr error) {
 
 	policyContext, err := opts.global.getPolicyContext()
 	if err != nil {
-		return errors.Wrapf(err, "Error loading trust policy")
+		return fmt.Errorf("Error loading trust policy: %w", err)
 	}
 	defer func() {
 		if err := policyContext.Destroy(); err != nil {
-			retErr = fmt.Errorf("(error tearing down policy context: %v): %w", err, retErr)
+			retErr = noteCloseFailure(retErr, "tearing down policy context", err)
 		}
 	}()
 
@@ -532,14 +532,14 @@ func (opts *syncOptions) run(args []string, stdout io.Writer) (retErr error) {
 		return errors.New("A source transport must be specified")
 	}
 	if !contains(opts.source, []string{docker.Transport.Name(), directory.Transport.Name(), "yaml"}) {
-		return errors.Errorf("%q is not a valid source transport", opts.source)
+		return fmt.Errorf("%q is not a valid source transport", opts.source)
 	}
 
 	if len(opts.destination) == 0 {
 		return errors.New("A destination transport must be specified")
 	}
 	if !contains(opts.destination, []string{docker.Transport.Name(), directory.Transport.Name()}) {
-		return errors.Errorf("%q is not a valid destination transport", opts.destination)
+		return fmt.Errorf("%q is not a valid destination transport", opts.destination)
 	}
 
 	if opts.source == opts.destination && opts.source == directory.Transport.Name() {
@@ -642,7 +642,7 @@ func (opts *syncOptions) run(args []string, stdout io.Writer) (retErr error) {
 					return err
 				}, opts.retryOpts); err != nil {
 					if !opts.keepGoing {
-						return errors.Wrapf(err, "Error copying ref %q", transports.ImageName(ref))
+						return fmt.Errorf("Error copying ref %q: %w", transports.ImageName(ref), err)
 					}
 					// log the error, keep a note that there was a failure and move on to the next
 					// image ref

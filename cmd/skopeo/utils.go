@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -14,7 +15,6 @@ import (
 	"github.com/containers/image/v5/transports/alltransports"
 	"github.com/containers/image/v5/types"
 	imgspecv1 "github.com/opencontainers/image-spec/specs-go/v1"
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -25,6 +25,27 @@ type errorShouldDisplayUsage struct {
 	error
 }
 
+// noteCloseFailure returns (possibly-nil) err modified to account for (non-nil) closeErr.
+// The error for closeErr is annotated with description (which is not a format string)
+// Typical usage:
+//
+// defer func() {
+//     if err := something.Close(); err != nil {
+//         returnedErr = noteCloseFailure(returnedErr, "closing something", err)
+//     }
+// }
+func noteCloseFailure(err error, description string, closeErr error) error {
+	// We don’t accept a Closer() and close it ourselves because signature.PolicyContext has .Destroy(), not .Close().
+	// This also makes it harder for a caller to do
+	//     defer noteCloseFailure(returnedErr, …)
+	// which doesn’t use the right value of returnedErr, and doesn’t update it.
+	if err == nil {
+		return fmt.Errorf("%s: %w", description, closeErr)
+	}
+	// In this case we prioritize the primary error for use with %w; closeErr is usually less relevant, or might be a consequence of the primary erorr.
+	return fmt.Errorf("%w (%s: %v)", err, description, closeErr)
+}
+
 // commandAction intermediates between the RunE interface and the real handler,
 // primarily to ensure that cobra.Command is not available to the handler, which in turn
 // makes sure that the cmd.Flags() etc. flag access functions are not used,
@@ -33,7 +54,8 @@ type errorShouldDisplayUsage struct {
 func commandAction(handler func(args []string, stdout io.Writer) error) func(cmd *cobra.Command, args []string) error {
 	return func(c *cobra.Command, args []string) error {
 		err := handler(args, c.OutOrStdout())
-		if _, ok := err.(errorShouldDisplayUsage); ok {
+		var shouldDisplayUsage errorShouldDisplayUsage
+		if errors.As(err, &shouldDisplayUsage) {
 			return c.Help()
 		}
 		return err

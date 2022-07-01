@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -18,7 +19,6 @@ import (
 	"github.com/containers/image/v5/types"
 	"github.com/containers/skopeo/cmd/skopeo/inspect"
 	v1 "github.com/opencontainers/image-spec/specs-go/v1"
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -100,12 +100,12 @@ func (opts *inspectOptions) run(args []string, stdout io.Writer) (retErr error) 
 		src, err = parseImageSource(ctx, opts.image, imageName)
 		return err
 	}, opts.retryOpts); err != nil {
-		return errors.Wrapf(err, "Error parsing image name %q", imageName)
+		return fmt.Errorf("Error parsing image name %q: %w", imageName, err)
 	}
 
 	defer func() {
 		if err := src.Close(); err != nil {
-			retErr = errors.Wrapf(retErr, fmt.Sprintf("(could not close image: %v) ", err))
+			retErr = noteCloseFailure(retErr, "closing image", err)
 		}
 	}()
 
@@ -113,13 +113,13 @@ func (opts *inspectOptions) run(args []string, stdout io.Writer) (retErr error) 
 		rawManifest, _, err = src.GetManifest(ctx, nil)
 		return err
 	}, opts.retryOpts); err != nil {
-		return errors.Wrapf(err, "Error retrieving manifest for image")
+		return fmt.Errorf("Error retrieving manifest for image: %w", err)
 	}
 
 	if opts.raw && !opts.config {
 		_, err := stdout.Write(rawManifest)
 		if err != nil {
-			return fmt.Errorf("Error writing manifest to standard output: %v", err)
+			return fmt.Errorf("Error writing manifest to standard output: %w", err)
 		}
 
 		return nil
@@ -127,7 +127,7 @@ func (opts *inspectOptions) run(args []string, stdout io.Writer) (retErr error) 
 
 	img, err := image.FromUnparsedImage(ctx, sys, image.UnparsedInstance(src, nil))
 	if err != nil {
-		return errors.Wrapf(err, "Error parsing manifest for image")
+		return fmt.Errorf("Error parsing manifest for image: %w", err)
 	}
 
 	if opts.config && opts.raw {
@@ -136,11 +136,11 @@ func (opts *inspectOptions) run(args []string, stdout io.Writer) (retErr error) 
 			configBlob, err = img.ConfigBlob(ctx)
 			return err
 		}, opts.retryOpts); err != nil {
-			return errors.Wrapf(err, "Error reading configuration blob")
+			return fmt.Errorf("Error reading configuration blob: %w", err)
 		}
 		_, err = stdout.Write(configBlob)
 		if err != nil {
-			return errors.Wrapf(err, "Error writing configuration blob to standard output")
+			return fmt.Errorf("Error writing configuration blob to standard output: %w", err)
 		}
 		return nil
 	} else if opts.config {
@@ -149,7 +149,7 @@ func (opts *inspectOptions) run(args []string, stdout io.Writer) (retErr error) 
 			config, err = img.OCIConfig(ctx)
 			return err
 		}, opts.retryOpts); err != nil {
-			return errors.Wrapf(err, "Error reading OCI-formatted configuration data")
+			return fmt.Errorf("Error reading OCI-formatted configuration data: %w", err)
 		}
 		if report.IsJSON(opts.format) || opts.format == "" {
 			var out []byte
@@ -163,7 +163,7 @@ func (opts *inspectOptions) run(args []string, stdout io.Writer) (retErr error) 
 			err = printTmpl(row, data)
 		}
 		if err != nil {
-			return errors.Wrapf(err, "Error writing OCI-formatted configuration data to standard output")
+			return fmt.Errorf("Error writing OCI-formatted configuration data to standard output: %w", err)
 		}
 		return nil
 	}
@@ -190,7 +190,7 @@ func (opts *inspectOptions) run(args []string, stdout io.Writer) (retErr error) 
 	}
 	outputData.Digest, err = manifest.Digest(rawManifest)
 	if err != nil {
-		return errors.Wrapf(err, "Error computing manifest digest")
+		return fmt.Errorf("Error computing manifest digest: %w", err)
 	}
 	if dockerRef := img.Reference().DockerReference(); dockerRef != nil {
 		outputData.Name = dockerRef.Name()
@@ -208,7 +208,7 @@ func (opts *inspectOptions) run(args []string, stdout io.Writer) (retErr error) 
 			// In addition, AWS ECR rejects it with 403 (Forbidden) if the "ecr:ListImages"
 			// action is not allowed.
 			if !strings.Contains(err.Error(), "401") && !strings.Contains(err.Error(), "403") {
-				return errors.Wrapf(err, "Error determining repository tags")
+				return fmt.Errorf("Error determining repository tags: %w", err)
 			}
 			logrus.Warnf("Registry disallows tag list retrieval; skipping")
 		}

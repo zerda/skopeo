@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -12,7 +13,6 @@ import (
 	"github.com/containers/image/v5/pkg/blobinfocache"
 	"github.com/containers/image/v5/types"
 	"github.com/opencontainers/go-digest"
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
 
@@ -79,14 +79,14 @@ func (opts *layersOptions) run(args []string, stdout io.Writer) (retErr error) {
 		return err
 	}, opts.retryOpts); err != nil {
 		if closeErr := rawSource.Close(); closeErr != nil {
-			return errors.Wrapf(err, " (close error: %v)", closeErr)
+			return fmt.Errorf("%w (closing image source: %v)", err, closeErr)
 		}
 
 		return err
 	}
 	defer func() {
 		if err := src.Close(); err != nil {
-			retErr = errors.Wrapf(retErr, " (close error: %v)", err)
+			retErr = noteCloseFailure(retErr, "closing image", err)
 		}
 	}()
 
@@ -136,7 +136,7 @@ func (opts *layersOptions) run(args []string, stdout io.Writer) (retErr error) {
 
 	defer func() {
 		if err := dest.Close(); err != nil {
-			retErr = errors.Wrapf(retErr, " (close error: %v)", err)
+			retErr = noteCloseFailure(retErr, "closing destination", err)
 		}
 	}()
 
@@ -153,7 +153,7 @@ func (opts *layersOptions) run(args []string, stdout io.Writer) (retErr error) {
 		}
 		if _, err := dest.PutBlob(ctx, r, types.BlobInfo{Digest: bd.digest, Size: blobSize}, cache, bd.isConfig); err != nil {
 			if closeErr := r.Close(); closeErr != nil {
-				return errors.Wrapf(err, " (close error: %v)", closeErr)
+				return fmt.Errorf("%w (close error: %v)", err, closeErr)
 			}
 			return err
 		}
