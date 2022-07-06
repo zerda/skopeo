@@ -29,22 +29,23 @@ import (
 
 // syncOptions contains information retrieved from the skopeo sync command line.
 type syncOptions struct {
-	global              *globalOptions // Global (not command dependent) skopeo options
-	deprecatedTLSVerify *deprecatedTLSVerifyOption
-	srcImage            *imageOptions     // Source image options
-	destImage           *imageDestOptions // Destination image options
-	retryOpts           *retry.RetryOptions
-	removeSignatures    bool                      // Do not copy signatures from the source image
-	signByFingerprint   string                    // Sign the image using a GPG key with the specified fingerprint
-	signPassphraseFile  string                    // Path pointing to a passphrase file when signing
-	format              commonFlag.OptionalString // Force conversion of the image to a specified format
-	source              string                    // Source repository name
-	destination         string                    // Destination registry name
-	scoped              bool                      // When true, namespace copied images at destination using the source repository name
-	all                 bool                      // Copy all of the images if an image in the source is a list
-	dryRun              bool                      // Don't actually copy anything, just output what it would have done
-	preserveDigests     bool                      // Preserve digests during sync
-	keepGoing           bool                      // Whether or not to abort the sync if there are any errors during syncing the images
+	global                   *globalOptions // Global (not command dependent) skopeo options
+	deprecatedTLSVerify      *deprecatedTLSVerifyOption
+	srcImage                 *imageOptions     // Source image options
+	destImage                *imageDestOptions // Destination image options
+	retryOpts                *retry.RetryOptions
+	removeSignatures         bool                      // Do not copy signatures from the source image
+	signByFingerprint        string                    // Sign the image using a GPG key with the specified fingerprint
+	signBySigstorePrivateKey string                    // Sign the image using a sigstore private key
+	signPassphraseFile       string                    // Path pointing to a passphrase file when signing
+	format                   commonFlag.OptionalString // Force conversion of the image to a specified format
+	source                   string                    // Source repository name
+	destination              string                    // Destination registry name
+	scoped                   bool                      // When true, namespace copied images at destination using the source repository name
+	all                      bool                      // Copy all of the images if an image in the source is a list
+	dryRun                   bool                      // Don't actually copy anything, just output what it would have done
+	preserveDigests          bool                      // Preserve digests during sync
+	keepGoing                bool                      // Whether or not to abort the sync if there are any errors during syncing the images
 }
 
 // repoDescriptor contains information of a single repository used as a sync source.
@@ -105,6 +106,7 @@ See skopeo-sync(1) for details.
 	flags := cmd.Flags()
 	flags.BoolVar(&opts.removeSignatures, "remove-signatures", false, "Do not copy signatures from SOURCE images")
 	flags.StringVar(&opts.signByFingerprint, "sign-by", "", "Sign the image using a GPG key with the specified `FINGERPRINT`")
+	flags.StringVar(&opts.signBySigstorePrivateKey, "sign-by-sigstore-private-key", "", "Sign the image using a sigstore private key at `PATH`")
 	flags.StringVar(&opts.signPassphraseFile, "sign-passphrase-file", "", "File that contains a passphrase for the --sign-by key")
 	flags.VarP(commonFlag.NewOptionalStringValue(&opts.format), "format", "f", `MANIFEST TYPE (oci, v2s1, or v2s2) to use when syncing image(s) to a destination (default is manifest type of source, with fallbacks)`)
 	flags.StringVarP(&opts.source, "src", "s", "", "SOURCE transport type")
@@ -582,14 +584,32 @@ func (opts *syncOptions) run(args []string, stdout io.Writer) (retErr error) {
 		return err
 	}
 
-	passphrase, err := cli.ReadPassphraseFile(opts.signPassphraseFile)
-	if err != nil {
-		return err
+	// c/image/copy.Image does allow creating both simple signing and sigstore signatures simultaneously,
+	// with independent passphrases, but that would make the CLI probably too confusing.
+	// For now, use the passphrase with either, but only one of them.
+	if opts.signPassphraseFile != "" && opts.signByFingerprint != "" && opts.signBySigstorePrivateKey != "" {
+		return fmt.Errorf("Only one of --sign-by and sign-by-sigstore-private-key can be used with sign-passphrase-file")
+	}
+	var passphrase string
+	if opts.signPassphraseFile != "" {
+		p, err := cli.ReadPassphraseFile(opts.signPassphraseFile)
+		if err != nil {
+			return err
+		}
+		passphrase = p
+	} else if opts.signBySigstorePrivateKey != "" {
+		p, err := promptForPassphrase(opts.signBySigstorePrivateKey, os.Stdin, os.Stdout)
+		if err != nil {
+			return err
+		}
+		passphrase = p
 	}
 	options := copy.Options{
 		RemoveSignatures:                      opts.removeSignatures,
 		SignBy:                                opts.signByFingerprint,
 		SignPassphrase:                        passphrase,
+		SignBySigstorePrivateKeyFile:          opts.signBySigstorePrivateKey,
+		SignSigstorePrivateKeyPassphrase:      []byte(passphrase),
 		ReportWriter:                          os.Stdout,
 		DestinationCtx:                        destinationCtx,
 		ImageListSelection:                    imageListSelection,

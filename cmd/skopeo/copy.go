@@ -21,25 +21,26 @@ import (
 )
 
 type copyOptions struct {
-	global              *globalOptions
-	deprecatedTLSVerify *deprecatedTLSVerifyOption
-	srcImage            *imageOptions
-	destImage           *imageDestOptions
-	retryOpts           *retry.RetryOptions
-	additionalTags      []string                  // For docker-archive: destinations, in addition to the name:tag specified as destination, also add these
-	removeSignatures    bool                      // Do not copy signatures from the source image
-	signByFingerprint   string                    // Sign the image using a GPG key with the specified fingerprint
-	signPassphraseFile  string                    // Path pointing to a passphrase file when signing
-	signIdentity        string                    // Identity of the signed image, must be a fully specified docker reference
-	digestFile          string                    // Write digest to this file
-	format              commonFlag.OptionalString // Force conversion of the image to a specified format
-	quiet               bool                      // Suppress output information when copying images
-	all                 bool                      // Copy all of the images if the source is a list
-	multiArch           commonFlag.OptionalString // How to handle multi architecture images
-	preserveDigests     bool                      // Preserve digests during copy
-	encryptLayer        []int                     // The list of layers to encrypt
-	encryptionKeys      []string                  // Keys needed to encrypt the image
-	decryptionKeys      []string                  // Keys needed to decrypt the image
+	global                   *globalOptions
+	deprecatedTLSVerify      *deprecatedTLSVerifyOption
+	srcImage                 *imageOptions
+	destImage                *imageDestOptions
+	retryOpts                *retry.RetryOptions
+	additionalTags           []string                  // For docker-archive: destinations, in addition to the name:tag specified as destination, also add these
+	removeSignatures         bool                      // Do not copy signatures from the source image
+	signByFingerprint        string                    // Sign the image using a GPG key with the specified fingerprint
+	signBySigstorePrivateKey string                    // Sign the image using a sigstore private key
+	signPassphraseFile       string                    // Path pointing to a passphrase file when signing (for either signature format, but only one of them)
+	signIdentity             string                    // Identity of the signed image, must be a fully specified docker reference
+	digestFile               string                    // Write digest to this file
+	format                   commonFlag.OptionalString // Force conversion of the image to a specified format
+	quiet                    bool                      // Suppress output information when copying images
+	all                      bool                      // Copy all of the images if the source is a list
+	multiArch                commonFlag.OptionalString // How to handle multi architecture images
+	preserveDigests          bool                      // Preserve digests during copy
+	encryptLayer             []int                     // The list of layers to encrypt
+	encryptionKeys           []string                  // Keys needed to encrypt the image
+	decryptionKeys           []string                  // Keys needed to decrypt the image
 }
 
 func copyCmd(global *globalOptions) *cobra.Command {
@@ -82,7 +83,8 @@ See skopeo(1) section "IMAGE NAMES" for the expected format
 	flags.BoolVar(&opts.preserveDigests, "preserve-digests", false, "Preserve digests of images and lists")
 	flags.BoolVar(&opts.removeSignatures, "remove-signatures", false, "Do not copy signatures from SOURCE-IMAGE")
 	flags.StringVar(&opts.signByFingerprint, "sign-by", "", "Sign the image using a GPG key with the specified `FINGERPRINT`")
-	flags.StringVar(&opts.signPassphraseFile, "sign-passphrase-file", "", "File that contains a passphrase for the --sign-by key")
+	flags.StringVar(&opts.signBySigstorePrivateKey, "sign-by-sigstore-private-key", "", "Sign the image using a sigstore private key at `PATH`")
+	flags.StringVar(&opts.signPassphraseFile, "sign-passphrase-file", "", "Read a passphrase for signing an image from `PATH`")
 	flags.StringVar(&opts.signIdentity, "sign-identity", "", "Identity of signed image, must be a fully specified docker reference. Defaults to the target docker reference.")
 	flags.StringVar(&opts.digestFile, "digestfile", "", "Write the digest of the pushed image to the specified file")
 	flags.VarP(commonFlag.NewOptionalStringValue(&opts.format), "format", "f", `MANIFEST TYPE (oci, v2s1, or v2s2) to use in the destination (default is manifest type of source, with fallbacks)`)
@@ -229,10 +231,26 @@ func (opts *copyOptions) run(args []string, stdout io.Writer) (retErr error) {
 		decConfig = cc.DecryptConfig
 	}
 
-	passphrase, err := cli.ReadPassphraseFile(opts.signPassphraseFile)
-	if err != nil {
-		return err
+	// c/image/copy.Image does allow creating both simple signing and sigstore signatures simultaneously,
+	// with independent passphrases, but that would make the CLI probably too confusing.
+	// For now, use the passphrase with either, but only one of them.
+	if opts.signPassphraseFile != "" && opts.signByFingerprint != "" && opts.signBySigstorePrivateKey != "" {
+		return fmt.Errorf("Only one of --sign-by and sign-by-sigstore-private-key can be used with sign-passphrase-file")
 	}
+	var passphrase string
+	if opts.signPassphraseFile != "" {
+		p, err := cli.ReadPassphraseFile(opts.signPassphraseFile)
+		if err != nil {
+			return err
+		}
+		passphrase = p
+	} else if opts.signBySigstorePrivateKey != "" {
+		p, err := promptForPassphrase(opts.signBySigstorePrivateKey, os.Stdin, os.Stdout)
+		if err != nil {
+			return err
+		}
+		passphrase = p
+	} // opts.signByFingerprint triggers a GPG-agent passphrase prompt, possibly using a more secure channel, so we usually shouldn’t prompt ourselves if no passphrase was explicitly provided.
 
 	var signIdentity reference.Named = nil
 	if opts.signIdentity != "" {
@@ -244,19 +262,21 @@ func (opts *copyOptions) run(args []string, stdout io.Writer) (retErr error) {
 
 	return retry.RetryIfNecessary(ctx, func() error {
 		manifestBytes, err := copy.Image(ctx, policyContext, destRef, srcRef, &copy.Options{
-			RemoveSignatures:      opts.removeSignatures,
-			SignBy:                opts.signByFingerprint,
-			SignPassphrase:        passphrase,
-			SignIdentity:          signIdentity,
-			ReportWriter:          stdout,
-			SourceCtx:             sourceCtx,
-			DestinationCtx:        destinationCtx,
-			ForceManifestMIMEType: manifestType,
-			ImageListSelection:    imageListSelection,
-			PreserveDigests:       opts.preserveDigests,
-			OciDecryptConfig:      decConfig,
-			OciEncryptLayers:      encLayers,
-			OciEncryptConfig:      encConfig,
+			RemoveSignatures:                 opts.removeSignatures,
+			SignBy:                           opts.signByFingerprint,
+			SignPassphrase:                   passphrase,
+			SignBySigstorePrivateKeyFile:     opts.signBySigstorePrivateKey,
+			SignSigstorePrivateKeyPassphrase: []byte(passphrase),
+			SignIdentity:                     signIdentity,
+			ReportWriter:                     stdout,
+			SourceCtx:                        sourceCtx,
+			DestinationCtx:                   destinationCtx,
+			ForceManifestMIMEType:            manifestType,
+			ImageListSelection:               imageListSelection,
+			PreserveDigests:                  opts.preserveDigests,
+			OciDecryptConfig:                 decConfig,
+			OciEncryptLayers:                 encLayers,
+			OciEncryptConfig:                 encConfig,
 		})
 		if err != nil {
 			return err

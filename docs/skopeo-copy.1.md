@@ -91,11 +91,15 @@ Do not copy signatures, if any, from _source-image_. Necessary when copying a si
 
 **--sign-by** _key-id_
 
-Add a signature using that key ID for an image name corresponding to _destination-image_
+Add a “simple signing” signature using that key ID for an image name corresponding to _destination-image_
+
+**--sign-by-sigstore-private-key** _path_
+
+Add a sigstore signature using a private key at _path_ for an image name corresponding to _destination-image_
 
 **--sign-passphrase-file** _path_
 
-The passphare to use when signing with the key ID from `--sign-by`. Only the first line will be read. A passphrase stored in a file is of questionable security if other users can read this file. Do not use this option if at all avoidable.
+The passphare to use when signing with `--sign-by` or `--sign-by-sigstore-private-key`. Only the first line will be read. A passphrase stored in a file is of questionable security if other users can read this file. Do not use this option if at all avoidable.
 
 **--sign-identity** _reference_
 

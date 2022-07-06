@@ -18,6 +18,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	"golang.org/x/term"
 )
 
 // errorShouldDisplayUsage is a subtype of error used by command handlers to indicate that cli.ShowSubcommandHelp should be called.
@@ -375,4 +376,20 @@ Flags:
 func adjustUsage(c *cobra.Command) {
 	c.SetUsageTemplate(usageTemplate)
 	c.DisableFlagsInUseLine = true
+}
+
+// promptForPassphrase interactively prompts for a passphrase related to privateKeyFile
+func promptForPassphrase(privateKeyFile string, stdin, stdout *os.File) (string, error) {
+	stdinFd := int(stdin.Fd())
+	if !term.IsTerminal(stdinFd) {
+		return "", fmt.Errorf("Cannot prompt for a passphrase for key %s, standard input is not a TTY", privateKeyFile)
+	}
+
+	fmt.Fprintf(stdout, "Passphrase for key %s: ", privateKeyFile)
+	passphrase, err := term.ReadPassword(stdinFd)
+	if err != nil {
+		return "", fmt.Errorf("Error reading password: %w", err)
+	}
+	fmt.Fprintf(stdout, "\n")
+	return string(passphrase), nil
 }
