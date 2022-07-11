@@ -11,7 +11,7 @@ else
 CONTAINERSCONFDIR ?= /etc/containers
 endif
 REGISTRIESDDIR ?= ${CONTAINERSCONFDIR}/registries.d
-SIGSTOREDIR ?= /var/lib/containers/sigstore
+LOOKASIDEDIR ?= /var/lib/containers/sigstore
 BINDIR ?= ${PREFIX}/bin
 MANDIR ?= ${PREFIX}/share/man
 
@@ -163,7 +163,7 @@ clean:
 	rm -rf bin docs/*.1 completions/
 
 install: install-binary install-docs install-completions
-	install -d -m 755 ${DESTDIR}${SIGSTOREDIR}
+	install -d -m 755 ${DESTDIR}${LOOKASIDEDIR}
 	install -d -m 755 ${DESTDIR}${CONTAINERSCONFDIR}
 	install -m 644 default-policy.json ${DESTDIR}${CONTAINERSCONFDIR}/policy.json
 	install -d -m 755 ${DESTDIR}${REGISTRIESDDIR}
