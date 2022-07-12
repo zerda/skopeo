@@ -845,8 +845,8 @@ func findRegularFiles(c *check.C, root string) []string {
 	return result
 }
 
-// --sign-by and policy use for docker: with sigstore
-func (s *CopySuite) TestCopyDockerSigstore(c *check.C) {
+// --sign-by and policy use for docker: with lookaside
+func (s *CopySuite) TestCopyDockerLookaside(c *check.C) {
 	mech, _, err := signature.NewEphemeralGPGSigningMechanism([]byte{})
 	c.Assert(err, check.IsNil)
 	defer mech.Close()
@@ -861,14 +861,14 @@ func (s *CopySuite) TestCopyDockerSigstore(c *check.C) {
 	err = os.Mkdir(copyDest, 0755)
 	c.Assert(err, check.IsNil)
 	dirDest := "dir:" + copyDest
-	plainSigstore := filepath.Join(tmpDir, "sigstore")
-	splitSigstoreStaging := filepath.Join(tmpDir, "sigstore-staging")
+	plainLookaside := filepath.Join(tmpDir, "lookaside")
+	splitLookasideStaging := filepath.Join(tmpDir, "lookaside-staging")
 
-	splitSigstoreReadServerHandler := http.NotFoundHandler()
-	splitSigstoreReadServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		splitSigstoreReadServerHandler.ServeHTTP(w, r)
+	splitLookasideReadServerHandler := http.NotFoundHandler()
+	splitLookasideReadServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		splitLookasideReadServerHandler.ServeHTTP(w, r)
 	}))
-	defer splitSigstoreReadServer.Close()
+	defer splitLookasideReadServer.Close()
 
 	policy := fileFromFixture(c, "fixtures/policy.json", map[string]string{"@keydir@": s.gpgHome})
 	defer os.Remove(policy)
@@ -876,20 +876,20 @@ func (s *CopySuite) TestCopyDockerSigstore(c *check.C) {
 	err = os.Mkdir(registriesDir, 0755)
 	c.Assert(err, check.IsNil)
 	registriesFile := fileFromFixture(c, "fixtures/registries.yaml",
-		map[string]string{"@sigstore@": plainSigstore, "@split-staging@": splitSigstoreStaging, "@split-read@": splitSigstoreReadServer.URL})
+		map[string]string{"@lookaside@": plainLookaside, "@split-staging@": splitLookasideStaging, "@split-read@": splitLookasideReadServer.URL})
 	err = os.Symlink(registriesFile, filepath.Join(registriesDir, "registries.yaml"))
 	c.Assert(err, check.IsNil)
 
-	// Get an image to work with.  Also verifies that we can use Docker repositories with no sigstore configured.
+	// Get an image to work with.  Also verifies that we can use Docker repositories with no lookaside configured.
 	assertSkopeoSucceeds(c, "", "--tls-verify=false", "--registries.d", registriesDir, "copy", testFQIN, ourRegistry+"original/busybox")
 	// Pulling an unsigned image fails.
 	assertSkopeoFails(c, ".*Source image rejected: A signature was required, but no signature exists.*",
 		"--tls-verify=false", "--policy", policy, "--registries.d", registriesDir, "copy", ourRegistry+"original/busybox", dirDest)
 
-	// Signing with sigstore defined succeeds,
+	// Signing with lookaside defined succeeds,
 	assertSkopeoSucceeds(c, "", "--tls-verify=false", "--registries.d", registriesDir, "copy", "--sign-by", "personal@example.com", ourRegistry+"original/busybox", ourRegistry+"signed/busybox")
 	// a signature file has been created,
-	foundFiles := findRegularFiles(c, plainSigstore)
+	foundFiles := findRegularFiles(c, plainLookaside)
 	c.Assert(foundFiles, check.HasLen, 1)
 	// and pulling a signed image succeeds.
 	assertSkopeoSucceeds(c, "", "--tls-verify=false", "--policy", policy, "--registries.d", registriesDir, "copy", ourRegistry+"signed/busybox", dirDest)
@@ -897,19 +897,19 @@ func (s *CopySuite) TestCopyDockerSigstore(c *check.C) {
 	// Deleting the image succeeds,
 	assertSkopeoSucceeds(c, "", "--tls-verify=false", "--registries.d", registriesDir, "delete", ourRegistry+"signed/busybox")
 	// and the signature file has been deleted (but we leave the directories around).
-	foundFiles = findRegularFiles(c, plainSigstore)
+	foundFiles = findRegularFiles(c, plainLookaside)
 	c.Assert(foundFiles, check.HasLen, 0)
 
-	// Signing with a read/write sigstore split succeeds,
+	// Signing with a read/write lookaside split succeeds,
 	assertSkopeoSucceeds(c, "", "--tls-verify=false", "--registries.d", registriesDir, "copy", "--sign-by", "personal@example.com", ourRegistry+"original/busybox", ourRegistry+"public/busybox")
 	// and a signature file has been created.
-	foundFiles = findRegularFiles(c, splitSigstoreStaging)
+	foundFiles = findRegularFiles(c, splitLookasideStaging)
 	c.Assert(foundFiles, check.HasLen, 1)
-	// Pulling the image fails because the read sigstore URL has not been populated:
+	// Pulling the image fails because the read lookaside URL has not been populated:
 	assertSkopeoFails(c, ".*Source image rejected: A signature was required, but no signature exists.*",
 		"--tls-verify=false", "--policy", policy, "--registries.d", registriesDir, "copy", ourRegistry+"public/busybox", dirDest)
-	// Pulling the image succeeds after the read sigstore URL is available:
-	splitSigstoreReadServerHandler = http.FileServer(http.Dir(splitSigstoreStaging))
+	// Pulling the image succeeds after the read lookaside URL is available:
+	splitLookasideReadServerHandler = http.FileServer(http.Dir(splitLookasideStaging))
 	assertSkopeoSucceeds(c, "", "--tls-verify=false", "--policy", policy, "--registries.d", registriesDir, "copy", ourRegistry+"public/busybox", dirDest)
 }
 
@@ -981,13 +981,13 @@ func (s *CopySuite) TestCopyVerifyingMirroredSignatures(c *check.C) {
 	}
 
 	topDir := c.MkDir()
-	registriesDir := filepath.Join(topDir, "registries.d") // An empty directory to disable sigstore use
+	registriesDir := filepath.Join(topDir, "registries.d") // An empty directory to disable lookaside use
 	dirDest := "dir:" + filepath.Join(topDir, "unused-dest")
 
 	policy := fileFromFixture(c, "fixtures/policy.json", map[string]string{"@keydir@": s.gpgHome})
 	defer os.Remove(policy)
 
-	// We use X-R-S-S for this testing to avoid having to deal with the sigstores.
+	// We use X-R-S-S for this testing to avoid having to deal with the lookasides.
 	// A downside is that OpenShift records signatures per image, so the error messages below
 	// list all signatures for other tags used for the same image as well.
 	// So, make sure to never create a signature that could be considered valid in a different part of the test (i.e. don't reuse tags).

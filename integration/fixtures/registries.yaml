@@ -1,6 +1,6 @@
 docker:
    localhost:5555:
-        sigstore: file://@sigstore@
+        lookaside: file://@lookaside@
    localhost:5555/public:
-        sigstore-staging: file://@split-staging@
-        sigstore: @split-read@
+        lookaside-staging: file://@split-staging@
+        lookaside: @split-read@
