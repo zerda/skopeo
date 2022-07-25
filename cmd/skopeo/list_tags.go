@@ -27,7 +27,7 @@ type tagListOutput struct {
 type tagsOptions struct {
 	global    *globalOptions
 	image     *imageOptions
-	retryOpts *retry.RetryOptions
+	retryOpts *retry.Options
 }
 
 var transportHandlers = map[string]func(ctx context.Context, sys *types.SystemContext, opts *tagsOptions, userInput string) (repositoryName string, tagListing []string, err error){
@@ -120,7 +120,7 @@ func listDockerRepoTags(ctx context.Context, sys *types.SystemContext, opts *tag
 	if err != nil {
 		return
 	}
-	if err = retry.RetryIfNecessary(ctx, func() error {
+	if err = retry.IfNecessary(ctx, func() error {
 		repositoryName, tagListing, err = listDockerTags(ctx, sys, imgRef)
 		return err
 	}, opts.retryOpts); err != nil {

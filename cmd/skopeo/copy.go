@@ -25,7 +25,7 @@ type copyOptions struct {
 	deprecatedTLSVerify      *deprecatedTLSVerifyOption
 	srcImage                 *imageOptions
 	destImage                *imageDestOptions
-	retryOpts                *retry.RetryOptions
+	retryOpts                *retry.Options
 	additionalTags           []string                  // For docker-archive: destinations, in addition to the name:tag specified as destination, also add these
 	removeSignatures         bool                      // Do not copy signatures from the source image
 	signByFingerprint        string                    // Sign the image using a GPG key with the specified fingerprint
@@ -260,7 +260,7 @@ func (opts *copyOptions) run(args []string, stdout io.Writer) (retErr error) {
 		}
 	}
 
-	return retry.RetryIfNecessary(ctx, func() error {
+	return retry.IfNecessary(ctx, func() error {
 		manifestBytes, err := copy.Image(ctx, policyContext, destRef, srcRef, &copy.Options{
 			RemoveSignatures:                 opts.removeSignatures,
 			SignBy:                           opts.signByFingerprint,
