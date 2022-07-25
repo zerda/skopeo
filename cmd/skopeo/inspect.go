@@ -26,7 +26,7 @@ import (
 type inspectOptions struct {
 	global        *globalOptions
 	image         *imageOptions
-	retryOpts     *retry.RetryOptions
+	retryOpts     *retry.Options
 	format        string
 	raw           bool // Output the raw manifest instead of parsing information about the image
 	config        bool // Output the raw config blob instead of parsing information about the image
@@ -96,7 +96,7 @@ func (opts *inspectOptions) run(args []string, stdout io.Writer) (retErr error) 
 		return err
 	}
 
-	if err := retry.RetryIfNecessary(ctx, func() error {
+	if err := retry.IfNecessary(ctx, func() error {
 		src, err = parseImageSource(ctx, opts.image, imageName)
 		return err
 	}, opts.retryOpts); err != nil {
@@ -109,7 +109,7 @@ func (opts *inspectOptions) run(args []string, stdout io.Writer) (retErr error) 
 		}
 	}()
 
-	if err := retry.RetryIfNecessary(ctx, func() error {
+	if err := retry.IfNecessary(ctx, func() error {
 		rawManifest, _, err = src.GetManifest(ctx, nil)
 		return err
 	}, opts.retryOpts); err != nil {
@@ -132,7 +132,7 @@ func (opts *inspectOptions) run(args []string, stdout io.Writer) (retErr error) 
 
 	if opts.config && opts.raw {
 		var configBlob []byte
-		if err := retry.RetryIfNecessary(ctx, func() error {
+		if err := retry.IfNecessary(ctx, func() error {
 			configBlob, err = img.ConfigBlob(ctx)
 			return err
 		}, opts.retryOpts); err != nil {
@@ -145,7 +145,7 @@ func (opts *inspectOptions) run(args []string, stdout io.Writer) (retErr error) 
 		return nil
 	} else if opts.config {
 		var config *v1.Image
-		if err := retry.RetryIfNecessary(ctx, func() error {
+		if err := retry.IfNecessary(ctx, func() error {
 			config, err = img.OCIConfig(ctx)
 			return err
 		}, opts.retryOpts); err != nil {
@@ -168,7 +168,7 @@ func (opts *inspectOptions) run(args []string, stdout io.Writer) (retErr error) 
 		return nil
 	}
 
-	if err := retry.RetryIfNecessary(ctx, func() error {
+	if err := retry.IfNecessary(ctx, func() error {
 		imgInspect, err = img.Inspect(ctx)
 		return err
 	}, opts.retryOpts); err != nil {

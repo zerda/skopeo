@@ -174,8 +174,8 @@ func imageFlags(global *globalOptions, shared *sharedImageOptions, deprecatedTLS
 	return fs, opts
 }
 
-func retryFlags() (pflag.FlagSet, *retry.RetryOptions) {
-	opts := retry.RetryOptions{}
+func retryFlags() (pflag.FlagSet, *retry.Options) {
+	opts := retry.Options{}
 	fs := pflag.FlagSet{}
 	fs.IntVar(&opts.MaxRetry, "retry-times", 0, "the number of times to possibly retry")
 	return fs, &opts

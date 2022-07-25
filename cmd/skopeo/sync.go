@@ -33,7 +33,7 @@ type syncOptions struct {
 	deprecatedTLSVerify      *deprecatedTLSVerifyOption
 	srcImage                 *imageOptions     // Source image options
 	destImage                *imageDestOptions // Destination image options
-	retryOpts                *retry.RetryOptions
+	retryOpts                *retry.Options
 	removeSignatures         bool                      // Do not copy signatures from the source image
 	signByFingerprint        string                    // Sign the image using a GPG key with the specified fingerprint
 	signBySigstorePrivateKey string                    // Sign the image using a sigstore private key
@@ -571,7 +571,7 @@ func (opts *syncOptions) run(args []string, stdout io.Writer) (retErr error) {
 
 	sourceArg := args[0]
 	var srcRepoList []repoDescriptor
-	if err = retry.RetryIfNecessary(ctx, func() error {
+	if err = retry.IfNecessary(ctx, func() error {
 		srcRepoList, err = imagesToCopy(sourceArg, opts.source, sourceCtx)
 		return err
 	}, opts.retryOpts); err != nil {
@@ -657,7 +657,7 @@ func (opts *syncOptions) run(args []string, stdout io.Writer) (retErr error) {
 				logrus.WithFields(fromToFields).Infof("Would have copied image ref %d/%d", counter+1, len(srcRepo.ImageRefs))
 			} else {
 				logrus.WithFields(fromToFields).Infof("Copying image ref %d/%d", counter+1, len(srcRepo.ImageRefs))
-				if err = retry.RetryIfNecessary(ctx, func() error {
+				if err = retry.IfNecessary(ctx, func() error {
 					_, err = copy.Image(ctx, policyContext, destRef, ref, &options)
 					return err
 				}, opts.retryOpts); err != nil {
