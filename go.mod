@@ -3,7 +3,7 @@ module github.com/containers/skopeo
 go 1.17
 
 require (
-	github.com/containers/common v0.48.0
+	github.com/containers/common v0.49.0
 	github.com/containers/image/v5 v5.22.0
 	github.com/containers/ocicrypt v1.1.5
 	github.com/containers/storage v1.42.0
@@ -94,6 +94,7 @@ require (
 	go.etcd.io/bbolt v1.3.6 // indirect
 	go.mozilla.org/pkcs7 v0.0.0-20200128120323-432b2356ecb1 // indirect
 	go.opencensus.io v0.23.0 // indirect
+	go.opentelemetry.io/otel/trace v1.3.0 // indirect
 	golang.org/x/crypto v0.0.0-20220131195533-30dcbda58838 // indirect
 	golang.org/x/net v0.0.0-20220624214902-1bab6f366d9e // indirect
 	golang.org/x/sync v0.0.0-20220601150217-0de741cfad7f // indirect
