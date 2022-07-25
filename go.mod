@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/containers/common v0.48.0
-	github.com/containers/image/v5 v5.21.2-0.20220712113758-29aec5f7bbbf
+	github.com/containers/image/v5 v5.22.0
 	github.com/containers/ocicrypt v1.1.5
 	github.com/containers/storage v1.42.0
 	github.com/docker/docker v20.10.17+incompatible
@@ -83,7 +83,7 @@ require (
 	github.com/stefanberger/go-pkcs11uri v0.0.0-20201008174630-78d3cae3a980 // indirect
 	github.com/sylabs/sif/v2 v2.7.1 // indirect
 	github.com/tchap/go-patricia v2.3.0+incompatible // indirect
-	github.com/theupdateframework/go-tuf v0.3.0 // indirect
+	github.com/theupdateframework/go-tuf v0.3.1 // indirect
 	github.com/titanous/rocacheck v0.0.0-20171023193734-afe73141d399 // indirect
 	github.com/ulikunitz/xz v0.5.10 // indirect
 	github.com/vbatts/tar-split v0.11.2 // indirect
